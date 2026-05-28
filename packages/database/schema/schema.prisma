@@ -1,0 +1,713 @@
+// ============================================================
+// Gestão Fretamento Pro — Prisma Schema
+// PostgreSQL 16 | Prisma v5
+//
+// Regras obrigatórias:
+//   - PKs:         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   - FKs:         String @db.Uuid
+//   - Monetários:  Decimal @db.Decimal(19,4)   — NUNCA Float
+//   - Timestamps:  DateTime @db.Timestamptz(6)
+//   - Hodômetro:   Decimal @db.Decimal(10,1)
+//   - Coordenadas: Decimal @db.Decimal(10,7)
+//   - JSONB:       Json @db.JsonB
+//   - Status:      String @db.VarChar(50)       — validação no código
+//   - Índices:     @@index com tenant_id SEMPRE como primeira coluna
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// MULTI-TENANCY
+// ============================================================
+
+model Tenant {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String    @db.VarChar(200)
+  tradeName String?   @db.VarChar(200) @map("trade_name")
+  document  String    @unique @db.VarChar(20) // CNPJ
+  plan      String    @db.VarChar(50) @default("STARTER")
+  status    String    @db.VarChar(50) @default("ACTIVE")
+  settings  Json?     @db.JsonB
+  createdAt DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  branches          Branch[]
+  users             User[]
+  employees         Employee[]
+  roles             Role[]
+  vehicles          Vehicle[]
+  drivers           Driver[]
+  clients           Client[]
+  routes            Route[]
+  trips             Trip[]
+  occurrences       Occurrence[]
+  fuelRecords       FuelRecord[]
+  maintenanceOrders MaintenanceOrder[]
+  documents         Document[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  outboxEvents      OutboxEvent[]
+  idempotencyKeys   IdempotencyKey[]
+
+  @@map("tenants")
+}
+
+model Branch {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String    @db.Uuid @map("tenant_id")
+  name      String    @db.VarChar(200)
+  city      String    @db.VarChar(100)
+  state     String    @db.VarChar(2)
+  address   String?   @db.Text
+  zipCode   String?   @db.VarChar(10) @map("zip_code")
+  phone     String?   @db.VarChar(30)
+  status    String    @db.VarChar(50) @default("ACTIVE")
+  createdAt DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  employees   Employee[]
+  vehicles    Vehicle[]
+  fuelRecords FuelRecord[]
+
+  @@index([tenantId, status])
+  @@map("branches")
+}
+
+// ============================================================
+// USERS & ACCESS CONTROL
+// ============================================================
+
+model User {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String    @db.Uuid @map("tenant_id")
+  employeeId       String?   @db.Uuid @map("employee_id")
+  name             String    @db.VarChar(200)
+  email            String    @db.VarChar(300)
+  phone            String?   @db.VarChar(30)
+  passwordHash     String    @db.Text @map("password_hash")
+  status           String    @db.VarChar(50) @default("ACTIVE")
+  lastLoginAt      DateTime? @db.Timestamptz(6) @map("last_login_at")
+  failedLoginCount Int       @default(0) @map("failed_login_count")
+  lockedUntil      DateTime? @db.Timestamptz(6) @map("locked_until")
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt        DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  employee      Employee?      @relation(fields: [employeeId], references: [id])
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]     @relation("AuditActor")
+
+  @@unique([tenantId, email])
+  @@index([tenantId, status])
+  @@index([tenantId, email])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @db.Uuid @map("user_id")
+  tenantId  String    @db.Uuid @map("tenant_id")
+  tokenHash String    @db.Text @map("token_hash")
+  familyId  String    @db.Uuid @map("family_id") // token family revocation
+  used      Boolean   @default(false)
+  expiresAt DateTime  @db.Timestamptz(6) @map("expires_at")
+  revokedAt DateTime? @db.Timestamptz(6) @map("revoked_at")
+  createdAt DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  ipAddress String?   @db.Inet @map("ip_address")
+  userAgent String?   @db.Text @map("user_agent")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, userId])
+  @@index([tokenHash])
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+model Employee {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @db.Uuid @map("tenant_id")
+  branchId      String?   @db.Uuid @map("branch_id")
+  roleId        String?   @db.Uuid @map("role_id")
+  name          String    @db.VarChar(200)
+  document      String?   @db.VarChar(20) // CPF
+  phone         String?   @db.VarChar(30)
+  email         String?   @db.VarChar(300)
+  department    String?   @db.VarChar(100)
+  admissionDate DateTime? @db.Timestamptz(6) @map("admission_date")
+  status        String    @db.VarChar(50) @default("ACTIVE")
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt     DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  branch   Branch?   @relation(fields: [branchId], references: [id])
+  role     Role?     @relation(fields: [roleId], references: [id])
+  user     User?
+  driver   Driver?
+
+  @@index([tenantId, status])
+  @@index([tenantId, branchId])
+  @@map("employees")
+}
+
+model Role {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String    @db.Uuid @map("tenant_id")
+  name           String    @db.VarChar(100)
+  department     String?   @db.VarChar(100)
+  hierarchyLevel Int       @default(0) @map("hierarchy_level")
+  description    String?   @db.Text
+  isSystem       Boolean   @default(false) @map("is_system") // built-in roles
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt      DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id])
+  rolePermissions RolePermission[]
+  employees       Employee[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key         String   @unique @db.VarChar(100) // e.g. 'vehicle.read', 'fuel.create'
+  module      String   @db.VarChar(50)
+  action      String   @db.VarChar(50)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  rolePermissions RolePermission[]
+
+  @@index([module])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @db.Uuid @map("tenant_id")
+  roleId       String   @db.Uuid @map("role_id")
+  permissionId String   @db.Uuid @map("permission_id")
+  scope        String?  @db.VarChar(50) // e.g. 'own_branch', 'all'
+  createdAt    DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([tenantId, roleId, permissionId])
+  @@index([tenantId, roleId])
+  @@map("role_permissions")
+}
+
+// ============================================================
+// FLEET
+// ============================================================
+
+model Vehicle {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String    @db.Uuid @map("tenant_id")
+  branchId        String?   @db.Uuid @map("branch_id")
+  plate           String    @db.VarChar(10)
+  prefix          String?   @db.VarChar(20)
+  type            String    @db.VarChar(50) // BUS, VAN, MICRO_BUS
+  capacity        Int
+  brand           String?   @db.VarChar(100)
+  model           String?   @db.VarChar(100)
+  year            Int?
+  fuelType        String?   @db.VarChar(30) @map("fuel_type")
+  currentOdometer Decimal?  @db.Decimal(10, 1) @map("current_odometer")
+  status          String    @db.VarChar(50) @default("AVAILABLE")
+  // AVAILABLE | IN_MAINTENANCE | UNAVAILABLE | RETIRED
+  notes           String?   @db.Text
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  createdBy       String?   @db.Uuid @map("created_by")
+  updatedBy       String?   @db.Uuid @map("updated_by")
+  deletedAt       DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
+  branch            Branch?            @relation(fields: [branchId], references: [id])
+  trips             Trip[]
+  drivers           Driver[]           @relation("DriverVehicle")
+  fuelRecords       FuelRecord[]
+  maintenanceOrders MaintenanceOrder[]
+  documents         Document[]
+  occurrences       Occurrence[]
+
+  @@unique([tenantId, plate])
+  @@index([tenantId, status])
+  @@index([tenantId, branchId])
+  @@map("vehicles")
+}
+
+model Driver {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String    @db.Uuid @map("tenant_id")
+  employeeId         String?   @unique @db.Uuid @map("employee_id")
+  licenseNumber      String    @db.VarChar(20) @map("license_number")
+  licenseCategory    String    @db.VarChar(10) @map("license_category") // B, C, D, E
+  licenseExpiresAt   DateTime  @db.Timestamptz(6) @map("license_expires_at")
+  availabilityStatus String    @db.VarChar(50) @default("AVAILABLE") @map("availability_status")
+  preferredVehicleId String?   @db.Uuid @map("preferred_vehicle_id")
+  notes              String?   @db.Text
+  createdAt          DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  createdBy          String?   @db.Uuid @map("created_by")
+  updatedBy          String?   @db.Uuid @map("updated_by")
+  deletedAt          DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant           Tenant       @relation(fields: [tenantId], references: [id])
+  employee         Employee?    @relation(fields: [employeeId], references: [id])
+  preferredVehicle Vehicle?     @relation("DriverVehicle", fields: [preferredVehicleId], references: [id])
+  trips            Trip[]
+  fuelRecords      FuelRecord[]
+  occurrences      Occurrence[]
+
+  @@unique([tenantId, licenseNumber])
+  @@index([tenantId, availabilityStatus])
+  @@map("drivers")
+}
+
+// ============================================================
+// CLIENTS & CONTRACTS
+// ============================================================
+
+model Client {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @db.Uuid @map("tenant_id")
+  name         String    @db.VarChar(200)
+  document     String?   @db.VarChar(20) // CNPJ/CPF
+  contactName  String?   @db.VarChar(200) @map("contact_name")
+  contactEmail String?   @db.VarChar(300) @map("contact_email")
+  contactPhone String?   @db.VarChar(30) @map("contact_phone")
+  address      String?   @db.Text
+  notes        String?   @db.Text
+  status       String    @db.VarChar(50) @default("ACTIVE")
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  createdBy    String?   @db.Uuid @map("created_by")
+  updatedBy    String?   @db.Uuid @map("updated_by")
+  deletedAt    DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  contracts   Contract[]
+  routes      Route[]
+  trips       Trip[]
+  occurrences Occurrence[]
+
+  @@index([tenantId, status])
+  @@map("clients")
+}
+
+model Contract {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @db.Uuid @map("tenant_id")
+  clientId    String    @db.Uuid @map("client_id")
+  number      String?   @db.VarChar(50)
+  description String?   @db.Text
+  value       Decimal?  @db.Decimal(19, 4)
+  startDate   DateTime? @db.Timestamptz(6) @map("start_date")
+  endDate     DateTime? @db.Timestamptz(6) @map("end_date")
+  status      String    @db.VarChar(50) @default("ACTIVE")
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  createdBy   String?   @db.Uuid @map("created_by")
+  updatedBy   String?   @db.Uuid @map("updated_by")
+  deletedAt   DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
+
+  @@index([tenantId, clientId, status])
+  @@map("contracts")
+}
+
+// ============================================================
+// ROUTES & TRIPS
+// ============================================================
+
+model Route {
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                 String    @db.Uuid @map("tenant_id")
+  clientId                 String?   @db.Uuid @map("client_id")
+  name                     String    @db.VarChar(200)
+  origin                   String    @db.VarChar(200)
+  destination              String    @db.VarChar(200)
+  estimatedDistanceKm      Decimal?  @db.Decimal(10, 2) @map("estimated_distance_km")
+  estimatedDurationMinutes Int?      @map("estimated_duration_minutes")
+  status                   String    @db.VarChar(50) @default("ACTIVE")
+  notes                    String?   @db.Text
+  createdAt                DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt                DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  createdBy                String?   @db.Uuid @map("created_by")
+  updatedBy                String?   @db.Uuid @map("updated_by")
+  deletedAt                DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  client      Client?      @relation(fields: [clientId], references: [id])
+  routePoints RoutePoint[]
+  trips       Trip[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, clientId])
+  @@map("routes")
+}
+
+model RoutePoint {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid @map("tenant_id")
+  routeId     String   @db.Uuid @map("route_id")
+  sequence    Int
+  name        String   @db.VarChar(200)
+  address     String?  @db.Text
+  latitude    Decimal? @db.Decimal(10, 7)
+  longitude   Decimal? @db.Decimal(10, 7)
+  plannedTime String?  @db.VarChar(5) @map("planned_time") // HH:MM
+  type        String   @db.VarChar(30) @default("STOP") // ORIGIN, STOP, DESTINATION
+  createdAt   DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+
+  route Route @relation(fields: [routeId], references: [id])
+
+  @@index([tenantId, routeId, sequence])
+  @@map("route_points")
+}
+
+model Trip {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String    @db.Uuid @map("tenant_id")
+  clientId         String?   @db.Uuid @map("client_id")
+  routeId          String?   @db.Uuid @map("route_id")
+  vehicleId        String?   @db.Uuid @map("vehicle_id")
+  driverId         String?   @db.Uuid @map("driver_id")
+  scheduledStartAt DateTime  @db.Timestamptz(6) @map("scheduled_start_at")
+  scheduledEndAt   DateTime? @db.Timestamptz(6) @map("scheduled_end_at")
+  actualStartAt    DateTime? @db.Timestamptz(6) @map("actual_start_at")
+  actualEndAt      DateTime? @db.Timestamptz(6) @map("actual_end_at")
+  status           String    @db.VarChar(50) @default("DRAFT")
+  // DRAFT | CONFIRMED | IN_PROGRESS | COMPLETED | DELAYED | CANCELED
+  passengerCount   Int?      @map("passenger_count")
+  notes            String?   @db.Text
+  cancelReason     String?   @db.Text @map("cancel_reason")
+  version          Int       @default(0) // optimistic locking
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  createdBy        String?   @db.Uuid @map("created_by")
+  updatedBy        String?   @db.Uuid @map("updated_by")
+  deletedAt        DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  client         Client?         @relation(fields: [clientId], references: [id])
+  route          Route?          @relation(fields: [routeId], references: [id])
+  vehicle        Vehicle?        @relation(fields: [vehicleId], references: [id])
+  driver         Driver?         @relation(fields: [driverId], references: [id])
+  tripPassengers TripPassenger[]
+  occurrences    Occurrence[]
+
+  @@index([tenantId, status, scheduledStartAt(sort: Desc)])
+  @@index([tenantId, vehicleId])
+  @@index([tenantId, driverId])
+  @@index([tenantId, scheduledStartAt])
+  @@map("trips")
+}
+
+model TripPassenger {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @db.Uuid @map("tenant_id")
+  tripId        String   @db.Uuid @map("trip_id")
+  name          String   @db.VarChar(200)
+  document      String?  @db.VarChar(20)
+  phone         String?  @db.VarChar(30)
+  boardingPoint String?  @db.VarChar(200) @map("boarding_point")
+  status        String   @db.VarChar(50) @default("CONFIRMED")
+  createdAt     DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+
+  trip Trip @relation(fields: [tripId], references: [id])
+
+  @@index([tenantId, tripId])
+  @@map("trip_passengers")
+}
+
+// ============================================================
+// OCCURRENCES
+// ============================================================
+
+model Occurrence {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String    @db.Uuid @map("tenant_id")
+  tripId            String?   @db.Uuid @map("trip_id")
+  vehicleId         String?   @db.Uuid @map("vehicle_id")
+  driverId          String?   @db.Uuid @map("driver_id")
+  clientId          String?   @db.Uuid @map("client_id")
+  type              String    @db.VarChar(100) // ACCIDENT, BREAKDOWN, DELAY, COMPLAINT, etc.
+  severity          String    @db.VarChar(30) @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+  description       String    @db.Text
+  status            String    @db.VarChar(50) @default("OPEN")
+  // OPEN | IN_ANALYSIS | RESOLVED | CRITICAL
+  responsibleUserId String?   @db.Uuid @map("responsible_user_id")
+  actionTaken       String?   @db.Text @map("action_taken")
+  resolvedAt        DateTime? @db.Timestamptz(6) @map("resolved_at")
+  notes             String?   @db.Text
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt         DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  createdBy         String?   @db.Uuid @map("created_by")
+  updatedBy         String?   @db.Uuid @map("updated_by")
+  deletedAt         DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  trip    Trip?    @relation(fields: [tripId], references: [id])
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
+  driver  Driver?  @relation(fields: [driverId], references: [id])
+  client  Client?  @relation(fields: [clientId], references: [id])
+
+  @@index([tenantId, status, severity, createdAt(sort: Desc)])
+  @@index([tenantId, tripId])
+  @@index([tenantId, vehicleId])
+  @@map("occurrences")
+}
+
+// ============================================================
+// FUEL
+// ============================================================
+
+model FuelStation {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String    @db.Uuid @map("tenant_id")
+  name      String    @db.VarChar(200)
+  address   String?   @db.Text
+  city      String?   @db.VarChar(100)
+  state     String?   @db.VarChar(2)
+  cnpj      String?   @db.VarChar(20)
+  status    String    @db.VarChar(50) @default("ACTIVE")
+  createdAt DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  @@index([tenantId, status])
+  @@map("fuel_stations")
+}
+
+model FuelRecord {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String    @db.Uuid @map("tenant_id")
+  vehicleId       String    @db.Uuid @map("vehicle_id")
+  driverId        String?   @db.Uuid @map("driver_id")
+  branchId        String?   @db.Uuid @map("branch_id")
+  fuelStationName String?   @db.VarChar(200) @map("fuel_station_name")
+  fuelType        String    @db.VarChar(30) @map("fuel_type") // DIESEL, GASOLINE, ETHANOL, GNV
+  liters          Decimal   @db.Decimal(10, 3)
+  unitPrice       Decimal   @db.Decimal(19, 4) @map("unit_price")
+  totalAmount     Decimal   @db.Decimal(19, 4) @map("total_amount")
+  odometer        Decimal   @db.Decimal(10, 1)
+  receiptFileId   String?   @db.Uuid @map("receipt_file_id")
+  suppliedAt      DateTime  @db.Timestamptz(6) @map("supplied_at")
+  anomalyFlag     Boolean   @default(false) @map("anomaly_flag")
+  anomalyReason   String?   @db.Text @map("anomaly_reason")
+  notes           String?   @db.Text
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  createdBy       String?   @db.Uuid @map("created_by")
+  updatedBy       String?   @db.Uuid @map("updated_by")
+  deletedAt       DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  vehicle Vehicle  @relation(fields: [vehicleId], references: [id])
+  driver  Driver?  @relation(fields: [driverId], references: [id])
+  branch  Branch?  @relation(fields: [branchId], references: [id])
+
+  @@index([tenantId, vehicleId, suppliedAt(sort: Desc)])
+  @@index([tenantId, anomalyFlag])
+  @@index([tenantId, suppliedAt])
+  @@map("fuel_records")
+}
+
+// ============================================================
+// MAINTENANCE
+// ============================================================
+
+model MaintenanceOrder {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String    @db.Uuid @map("tenant_id")
+  vehicleId        String    @db.Uuid @map("vehicle_id")
+  type             String    @db.VarChar(50) // PREVENTIVE, CORRECTIVE, INSPECTION
+  description      String    @db.Text
+  supplierName     String?   @db.VarChar(200) @map("supplier_name")
+  supplierDocument String?   @db.VarChar(20) @map("supplier_document")
+  expectedStartAt  DateTime? @db.Timestamptz(6) @map("expected_start_at")
+  expectedEndAt    DateTime? @db.Timestamptz(6) @map("expected_end_at")
+  actualEndAt      DateTime? @db.Timestamptz(6) @map("actual_end_at")
+  totalCost        Decimal?  @db.Decimal(19, 4) @map("total_cost")
+  status           String    @db.VarChar(50) @default("OPEN")
+  // OPEN | IN_PROGRESS | COMPLETED | CANCELED
+  notes            String?   @db.Text
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  createdBy        String?   @db.Uuid @map("created_by")
+  updatedBy        String?   @db.Uuid @map("updated_by")
+  deletedAt        DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant  Tenant            @relation(fields: [tenantId], references: [id])
+  vehicle Vehicle           @relation(fields: [vehicleId], references: [id])
+  items   MaintenanceItem[]
+
+  @@index([tenantId, vehicleId, status])
+  @@index([tenantId, status])
+  @@map("maintenance_orders")
+}
+
+model MaintenanceItem {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String   @db.Uuid @map("tenant_id")
+  maintenanceOrderId String   @db.Uuid @map("maintenance_order_id")
+  description        String   @db.Text
+  partName           String?  @db.VarChar(200) @map("part_name")
+  partCode           String?  @db.VarChar(50) @map("part_code")
+  quantity           Decimal  @db.Decimal(10, 2) @default(1)
+  unitCost           Decimal  @db.Decimal(19, 4) @map("unit_cost")
+  totalCost          Decimal  @db.Decimal(19, 4) @map("total_cost")
+  createdAt          DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt          DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+
+  maintenanceOrder MaintenanceOrder @relation(fields: [maintenanceOrderId], references: [id])
+
+  @@index([tenantId, maintenanceOrderId])
+  @@map("maintenance_items")
+}
+
+// ============================================================
+// DOCUMENTS
+// ============================================================
+
+model Document {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String    @db.Uuid @map("tenant_id")
+  entityType       String    @db.VarChar(50) @map("entity_type") // VEHICLE, DRIVER, COMPANY, EMPLOYEE
+  entityId         String    @db.Uuid @map("entity_id")
+  documentType     String    @db.VarChar(100) @map("document_type") // CNH, CRLV, ANTT, INSURANCE, etc.
+  fileName         String?   @db.VarChar(300) @map("file_name")
+  fileKey          String?   @db.Text @map("file_key") // S3 key
+  fileSizeBytes    Int?      @map("file_size_bytes")
+  mimeType         String?   @db.VarChar(100) @map("mime_type")
+  expiresAt        DateTime? @db.Timestamptz(6) @map("expires_at")
+  status           String    @db.VarChar(50) @default("ACTIVE") // ACTIVE, EXPIRED, REVOKED
+  sensitivityLevel String    @db.VarChar(30) @default("CONFIDENTIAL") @map("sensitivity_level")
+  notes            String?   @db.Text
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  createdBy        String?   @db.Uuid @map("created_by")
+  updatedBy        String?   @db.Uuid @map("updated_by")
+  deletedAt        DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  vehicle Vehicle? @relation(fields: [entityId], references: [id], map: "document_vehicle_fk")
+
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, expiresAt])
+  @@map("documents")
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @db.Uuid @map("tenant_id")
+  userId     String    @db.Uuid @map("user_id") // target user
+  type       String    @db.VarChar(100) // FUEL_ANOMALY, DOCUMENT_EXPIRING, TRIP_DELAYED, etc.
+  title      String    @db.VarChar(300)
+  body       String    @db.Text
+  entityType String?   @db.VarChar(50) @map("entity_type")
+  entityId   String?   @db.Uuid @map("entity_id")
+  readAt     DateTime? @db.Timestamptz(6) @map("read_at")
+  data       Json?     @db.JsonB
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, userId, readAt])
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// ============================================================
+// AUDIT & EVENTS
+// ============================================================
+
+model AuditLog {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @db.Uuid @map("tenant_id")
+  actorUserId String?   @db.Uuid @map("actor_user_id")
+  action      String    @db.VarChar(200) // e.g. 'user.login', 'trip.status_changed'
+  entityType  String?   @db.VarChar(100) @map("entity_type")
+  entityId    String?   @db.Uuid @map("entity_id")
+  before      Json?     @db.JsonB
+  after       Json?     @db.JsonB
+  ipAddress   String?   @db.Inet @map("ip_address")
+  userAgent   String?   @db.Text @map("user_agent")
+  traceId     String?   @db.VarChar(64) @map("trace_id")
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  actor  User?  @relation("AuditActor", fields: [actorUserId], references: [id])
+
+  @@index([tenantId, actorUserId, createdAt(sort: Desc)])
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, action, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+model OutboxEvent {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @db.Uuid @map("tenant_id")
+  aggregateId String    @db.Uuid @map("aggregate_id")
+  eventType   String    @db.VarChar(200) @map("event_type")
+  payload     Json      @db.JsonB
+  status      String    @db.VarChar(30) @default("PENDING")
+  // PENDING | PUBLISHED | FAILED | DEAD
+  retries     Int       @default(0)
+  lastError   String?   @db.Text @map("last_error")
+  publishedAt DateTime? @db.Timestamptz(6) @map("published_at")
+  nextRetryAt DateTime? @db.Timestamptz(6) @map("next_retry_at")
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([status, createdAt])
+  @@index([tenantId, aggregateId])
+  @@map("outbox_events")
+}
+
+model IdempotencyKey {
+  key       String   @db.VarChar(255)
+  tenantId  String   @db.Uuid @map("tenant_id")
+  endpoint  String   @db.VarChar(200)
+  response  Json     @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  expiresAt DateTime @db.Timestamptz(6) @map("expires_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@id([key, tenantId])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}

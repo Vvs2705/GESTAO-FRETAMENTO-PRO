@@ -1,0 +1,14 @@
+{
+  "extends": "@gestao-fretamento-pro/tsconfig/base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "target": "ES2021",
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

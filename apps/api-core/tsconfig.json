@@ -1,0 +1,12 @@
+{
+  "extends": "@gestao-fretamento-pro/tsconfig/nestjs.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "paths": {
+      "@gfp/*": ["../../packages/*/src"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "test"]
+}

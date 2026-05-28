@@ -127,6 +127,7 @@ export function TopBar({
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            data-testid="user-menu-button"
           >
             <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 text-primary flex items-center justify-center font-bold text-xs">
               {userName.substring(0, 2).toUpperCase()}
@@ -138,7 +139,7 @@ export function TopBar({
               </div>
             </div>
           </button>
-
+ 
           {showUserMenu && (
             <div className="absolute right-0 mt-2 w-48 bg-card border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-900 md:hidden">
@@ -159,6 +160,7 @@ export function TopBar({
                 <button
                   onClick={onLogout}
                   className="w-full flex items-center gap-2 px-4 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 text-left font-semibold border-t border-slate-100 dark:border-slate-900 transition-colors"
+                  data-testid="logout-button"
                 >
                   <LogOut className="w-4 h-4" /> Sair / Logout
                 </button>

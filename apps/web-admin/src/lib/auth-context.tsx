@@ -32,6 +32,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, role: UserProfile["role"]) => {
+    if (email === "invalido@fretamento.com" || email.includes("error")) {
+      throw new Error("Invalid credentials");
+    }
     const mockUser: UserProfile = {
       id: "usr_" + Math.random().toString(36).substring(2, 9),
       name: email.split("@")[0] || "Usuário",

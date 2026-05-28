@@ -36,10 +36,10 @@ export interface UpdateRoleDto {
 }
 
 // ---------------------------------------------------------------------------
-// Permission
+// PermissionEntity
 // ---------------------------------------------------------------------------
 
-export interface Permission {
+export interface PermissionEntity {
   id: string;
   key: string;
   module: string;

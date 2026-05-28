@@ -16,7 +16,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../../../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -45,9 +44,11 @@ model Tenant {
   users             User[]
   employees         Employee[]
   roles             Role[]
+  rolePermissions   RolePermission[]
   vehicles          Vehicle[]
   drivers           Driver[]
   clients           Client[]
+  contracts         Contract[]
   routes            Route[]
   trips             Trip[]
   occurrences       Occurrence[]
@@ -92,7 +93,7 @@ model Branch {
 model User {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId         String    @db.Uuid @map("tenant_id")
-  employeeId       String?   @db.Uuid @map("employee_id")
+  employeeId       String?   @unique @db.Uuid @map("employee_id")
   name             String    @db.VarChar(200)
   email            String    @db.VarChar(300)
   phone            String?   @db.VarChar(30)

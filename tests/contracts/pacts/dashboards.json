@@ -1,0 +1,38 @@
+{
+  "consumer": {
+    "name": "web-admin"
+  },
+  "provider": {
+    "name": "api-core"
+  },
+  "interactions": [
+    {
+      "description": "a request for executive dashboard KPIs",
+      "providerState": "data exists for tenant",
+      "request": {
+        "method": "GET",
+        "path": "/v1/dashboards/executive",
+        "headers": {
+          "Authorization": "Bearer mock-token"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "monthlyRevenue": 298500.0,
+          "operationalCost": 142100.0,
+          "activeClients": 42,
+          "riskLevel": "LOW"
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  }
+}

@@ -1,8 +1,10 @@
 "use client";
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { FormField, TextInput, SelectField, toast, ProgressBar } from "@gestao-fretamento-pro/ui";
 
 export default function NewTripWizardPage() {
+  const router = useRouter();
   const [step, setStep] = React.useState(1);
   const [client, setClient] = React.useState("");
   const [route, setRoute] = React.useState("");
@@ -20,7 +22,7 @@ export default function NewTripWizardPage() {
       setStep(step + 1);
     } else {
       toast.success("Sucesso", "Viagem criada com sucesso no pipeline de agendamentos!");
-      window.location.href = "/trips";
+      router.push("/trips");
     }
   };
 

@@ -30,15 +30,15 @@ export class AuditService {
       await this.prisma.auditLog.create({
         data: {
           tenantId: entry.tenantId,
-          actorUserId: entry.actorUserId,
+          actorUserId: entry.actorUserId ?? null,
           action: entry.action,
-          entityType: entry.entityType,
-          entityId: entry.entityId,
-          before: entry.before as never,
-          after: entry.after as never,
-          ipAddress: entry.ipAddress,
-          userAgent: entry.userAgent,
-          traceId: entry.traceId,
+          entityType: entry.entityType ?? null,
+          entityId: entry.entityId ?? null,
+          before: (entry.before ?? null) as never,
+          after: (entry.after ?? null) as never,
+          ipAddress: entry.ipAddress ?? null,
+          userAgent: entry.userAgent ?? null,
+          traceId: entry.traceId ?? null,
         },
       });
     } catch (err) {

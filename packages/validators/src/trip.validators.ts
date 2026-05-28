@@ -15,30 +15,30 @@ export const TRIP_STATUS_VALUES = [
   'CANCELED',
 ] as const;
 
-export const CreateTripSchema = z
-  .object({
-    clientId: UUIDSchema.optional(),
-    routeId: UUIDSchema.optional(),
-    vehicleId: UUIDSchema.optional(),
-    driverId: UUIDSchema.optional(),
-    scheduledStartAt: z.coerce
-      .date({ invalid_type_error: 'Data de início inválida' })
-      .refine((d) => d >= new Date(Date.now() - 60_000), {
-        message: 'Data de início não pode ser no passado',
-      }),
-    scheduledEndAt: z.coerce.date({ invalid_type_error: 'Data de fim inválida' }).optional(),
-    notes: z.string().trim().max(2000).optional(),
-  })
-  .refine(
-    (data) =>
-      data.scheduledEndAt === undefined || data.scheduledEndAt > data.scheduledStartAt,
-    {
-      message: 'Data de fim deve ser posterior à data de início',
-      path: ['scheduledEndAt'],
-    },
-  );
+const BaseTripSchema = z.object({
+  clientId: UUIDSchema.optional(),
+  routeId: UUIDSchema.optional(),
+  vehicleId: UUIDSchema.optional(),
+  driverId: UUIDSchema.optional(),
+  scheduledStartAt: z.coerce
+    .date({ invalid_type_error: 'Data de início inválida' })
+    .refine((d) => d >= new Date(Date.now() - 60_000), {
+      message: 'Data de início não pode ser no passado',
+    }),
+  scheduledEndAt: z.coerce.date({ invalid_type_error: 'Data de fim inválida' }).optional(),
+  notes: z.string().trim().max(2000).optional(),
+});
 
-export const UpdateTripSchema = CreateTripSchema.partial();
+export const CreateTripSchema = BaseTripSchema.refine(
+  (data) =>
+    data.scheduledEndAt === undefined || data.scheduledEndAt > data.scheduledStartAt,
+  {
+    message: 'Data de fim deve ser posterior à data de início',
+    path: ['scheduledEndAt'],
+  },
+);
+
+export const UpdateTripSchema = BaseTripSchema.partial();
 
 export const ChangeTripStatusSchema = z.object({
   status: z.enum(TRIP_STATUS_VALUES, {

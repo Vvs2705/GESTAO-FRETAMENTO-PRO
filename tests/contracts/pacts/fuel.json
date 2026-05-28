@@ -1,0 +1,44 @@
+{
+  "consumer": {
+    "name": "web-admin"
+  },
+  "provider": {
+    "name": "api-core"
+  },
+  "interactions": [
+    {
+      "description": "a request to record fuel supply",
+      "providerState": "vehicle exists",
+      "request": {
+        "method": "POST",
+        "path": "/v1/fuel-records",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer mock-token"
+        },
+        "body": {
+          "vehicleId": "vehicle_1",
+          "odometer": 12500.5,
+          "liters": 45.2,
+          "totalAmount": 250.00
+        }
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "id": "fuel_123",
+          "vehicleId": "vehicle_1",
+          "anomalyFlag": false
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  }
+}

@@ -29,7 +29,7 @@ export class TenantIsolationInterceptor implements NestInterceptor {
         {
           tenantId: req.tenantId ?? req.user?.tenantId ?? '',
           userId: req.user?.id ?? '',
-          traceId,
+          traceId: traceId ?? '',
         },
         () => {
           next.handle().subscribe({

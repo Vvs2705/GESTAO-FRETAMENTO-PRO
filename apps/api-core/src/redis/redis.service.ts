@@ -15,8 +15,8 @@ export class RedisService
 {
   private readonly logger = new Logger(RedisService.name);
 
-  constructor(private readonly config: ConfigService<Env>) {
-    super(config.get('REDIS_URL') ?? 'redis://localhost:6379', {
+  constructor(private readonly configService: ConfigService<Env>) {
+    super(configService.get('REDIS_URL') ?? 'redis://localhost:6379', {
       lazyConnect: true,
       maxRetriesPerRequest: 3,
       retryStrategy: (times) => Math.min(times * 100, 3000),

@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@gestao-fretamento-pro/tsconfig": "workspace:*",
+    "@types/node": "^20.12.12",
     "typescript": "^5.4.0"
   }
 }

@@ -1,0 +1,44 @@
+{
+  "consumer": {
+    "name": "web-admin"
+  },
+  "provider": {
+    "name": "api-core"
+  },
+  "interactions": [
+    {
+      "description": "a request to create a trip",
+      "providerState": "fleet and driver available",
+      "request": {
+        "method": "POST",
+        "path": "/v1/trips",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer mock-token"
+        },
+        "body": {
+          "clientId": "client_1",
+          "routeId": "route_1",
+          "scheduledStartAt": "2026-06-01T10:00:00Z"
+        }
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "id": "trip_123",
+          "clientId": "client_1",
+          "routeId": "route_1",
+          "status": "DRAFT"
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  }
+}

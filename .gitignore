@@ -1,0 +1,32 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+web_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Production build outputs
+dist/
+build/
+
+# IDE files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Turborepo Cache
+.turbo/
+
+# Local env files
+.env*.local
+.env

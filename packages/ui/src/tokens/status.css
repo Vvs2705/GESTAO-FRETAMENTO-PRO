@@ -1,0 +1,20 @@
+:root {
+  --status-trip-draft: #94A3B8;
+  --status-trip-confirmed: #3B82F6;
+  --status-trip-in-progress: #8B5CF6;
+  --status-trip-delayed: #F59E0B;
+  --status-trip-completed: #22C55E;
+  --status-trip-canceled: #6B7280;
+
+  --status-occurrence-open: #3B82F6;
+  --status-occurrence-critical: #EF4444;
+  --status-occurrence-resolved: #22C55E;
+
+  --status-vehicle-available: #22C55E;
+  --status-vehicle-in-maintenance: #F97316;
+  --status-vehicle-unavailable: #EF4444;
+
+  --status-document-valid: #22C55E;
+  --status-document-expiring: #F59E0B;
+  --status-document-expired: #EF4444;
+}

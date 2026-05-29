@@ -1,0 +1,1737 @@
+openapi: 3.0.0
+paths:
+  /v1/health:
+    get:
+      operationId: HealthController_live
+      summary: Liveness probe — confirms the process is alive
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - health
+  /v1/health/ready:
+    get:
+      operationId: HealthController_ready
+      summary: Readiness probe — verifies database and Redis connectivity
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - health
+  /v1/auth/login:
+    post:
+      operationId: AuthController_login
+      summary: Autenticar usuário e obter tokens de acesso
+      parameters: []
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPairDto'
+        '401':
+          description: Credenciais inválidas
+        '429':
+          description: Muitas tentativas — tente mais tarde
+      tags:
+        - auth
+  /v1/auth/refresh:
+    post:
+      operationId: AuthController_refresh
+      summary: Renovar tokens usando refresh token
+      parameters: []
+      responses:
+        '200':
+          description: Tokens renovados com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPairDto'
+        '401':
+          description: Refresh token inválido ou expirado
+      tags:
+        - auth
+  /v1/auth/logout:
+    post:
+      operationId: AuthController_logout
+      summary: Encerrar sessão do usuário
+      parameters: []
+      responses:
+        '204':
+          description: Logout realizado com sucesso
+        '401':
+          description: Não autenticado
+      tags:
+        - auth
+      security:
+        - bearer: []
+  /v1/tenants/current:
+    get:
+      operationId: TenantsController_getCurrent
+      summary: Obter dados da empresa atual
+      parameters: []
+      responses:
+        '200':
+          description: Dados da empresa
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+      tags:
+        - tenants
+      security:
+        - bearer: []
+    patch:
+      operationId: TenantsController_update
+      summary: Atualizar dados da empresa atual
+      parameters: []
+      responses:
+        '200':
+          description: Empresa atualizada com sucesso
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+      tags:
+        - tenants
+      security:
+        - bearer: []
+  /v1/tenants/branches:
+    get:
+      operationId: TenantsController_getBranches
+      summary: Listar filiais da empresa
+      parameters: []
+      responses:
+        '200':
+          description: Lista de filiais
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+      tags:
+        - tenants
+      security:
+        - bearer: []
+    post:
+      operationId: TenantsController_createBranch
+      summary: Criar nova filial
+      parameters: []
+      responses:
+        '201':
+          description: Filial criada com sucesso
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+      tags:
+        - tenants
+      security:
+        - bearer: []
+  /v1/tenants/branches/{id}:
+    patch:
+      operationId: TenantsController_updateBranch
+      summary: Atualizar filial
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Filial atualizada com sucesso
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+        '404':
+          description: Filial não encontrada
+      tags:
+        - tenants
+      security:
+        - bearer: []
+  /v1/users/me:
+    get:
+      operationId: UsersController_getMe
+      summary: Obter dados do usuário autenticado
+      parameters: []
+      responses:
+        '200':
+          description: Dados do usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserWithPermissionsDto'
+        '401':
+          description: Não autenticado
+      tags:
+        - users
+      security:
+        - bearer: []
+  /v1/users:
+    get:
+      operationId: UsersController_findAll
+      summary: Listar usuários da empresa
+      parameters:
+        - name: search
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: status
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: cursor
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: false
+          in: query
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Lista de usuários paginada
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+      tags:
+        - users
+      security:
+        - bearer: []
+    post:
+      operationId: UsersController_create
+      summary: Criar novo usuário
+      parameters: []
+      responses:
+        '201':
+          description: Usuário criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponseDto'
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+        '409':
+          description: E-mail já cadastrado
+      tags:
+        - users
+      security:
+        - bearer: []
+  /v1/users/{id}:
+    get:
+      operationId: UsersController_findById
+      summary: Obter usuário por ID
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dados do usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponseDto'
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+        '404':
+          description: Usuário não encontrado
+      tags:
+        - users
+      security:
+        - bearer: []
+    patch:
+      operationId: UsersController_update
+      summary: Atualizar dados do usuário
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Usuário atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponseDto'
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+        '404':
+          description: Usuário não encontrado
+      tags:
+        - users
+      security:
+        - bearer: []
+  /v1/users/{id}/status:
+    patch:
+      operationId: UsersController_changeStatus
+      summary: Alterar status do usuário
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status alterado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponseDto'
+        '400':
+          description: Status inválido
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+        '404':
+          description: Usuário não encontrado
+      tags:
+        - users
+      security:
+        - bearer: []
+  /v1/roles:
+    get:
+      operationId: RolesController_findAll
+      summary: Listar cargos da empresa
+      parameters: []
+      responses:
+        '200':
+          description: Lista de cargos
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+      tags:
+        - roles
+      security:
+        - bearer: []
+    post:
+      operationId: RolesController_create
+      summary: Criar novo cargo
+      parameters: []
+      responses:
+        '201':
+          description: Cargo criado com sucesso
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+      tags:
+        - roles
+      security:
+        - bearer: []
+  /v1/roles/{id}:
+    get:
+      operationId: RolesController_findById
+      summary: Obter cargo por ID
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dados do cargo com permissões
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+        '404':
+          description: Cargo não encontrado
+      tags:
+        - roles
+      security:
+        - bearer: []
+    patch:
+      operationId: RolesController_update
+      summary: Atualizar cargo
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cargo atualizado com sucesso
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+        '404':
+          description: Cargo não encontrado
+      tags:
+        - roles
+      security:
+        - bearer: []
+    delete:
+      operationId: RolesController_softDelete
+      summary: Excluir cargo (soft delete)
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Cargo excluído com sucesso
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão ou cargo do sistema
+        '404':
+          description: Cargo não encontrado
+      tags:
+        - roles
+      security:
+        - bearer: []
+  /v1/roles/{id}/permissions:
+    post:
+      operationId: RolesController_assignPermission
+      summary: Atribuir permissão ao cargo
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Permissão atribuída com sucesso
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+        '404':
+          description: Cargo ou permissão não encontrada
+      tags:
+        - roles
+      security:
+        - bearer: []
+  /v1/roles/{roleId}/permissions/{permissionId}:
+    delete:
+      operationId: RolesController_removePermission
+      summary: Remover permissão do cargo
+      parameters:
+        - name: roleId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: permissionId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Permissão removida com sucesso
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+        '404':
+          description: Cargo ou permissão não encontrada
+      tags:
+        - roles
+      security:
+        - bearer: []
+  /v1/permissions:
+    get:
+      operationId: PermissionsController_findAll
+      summary: Listar todas as permissões disponíveis no sistema
+      parameters: []
+      responses:
+        '200':
+          description: Lista de permissões do sistema
+        '401':
+          description: Não autenticado
+        '403':
+          description: Sem permissão
+      tags:
+        - roles
+      security:
+        - bearer: []
+  /v1/vehicles:
+    get:
+      operationId: VehiclesController_findAll
+      summary: List all vehicles with cursor-based pagination
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - vehicles
+      security:
+        - bearer: []
+    post:
+      operationId: VehiclesController_create
+      summary: Create a new vehicle
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+        - vehicles
+      security:
+        - bearer: []
+  /v1/vehicles/{id}:
+    get:
+      operationId: VehiclesController_findById
+      summary: Get vehicle by ID
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - vehicles
+      security:
+        - bearer: []
+    patch:
+      operationId: VehiclesController_update
+      summary: Update vehicle
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - vehicles
+      security:
+        - bearer: []
+    delete:
+      operationId: VehiclesController_delete
+      summary: Soft delete a vehicle
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags:
+        - vehicles
+      security:
+        - bearer: []
+  /v1/vehicles/{id}/status:
+    patch:
+      operationId: VehiclesController_updateStatus
+      summary: Update vehicle status
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - vehicles
+      security:
+        - bearer: []
+  /v1/vehicles/{id}/availability:
+    get:
+      operationId: VehiclesController_checkAvailability
+      summary: Check vehicle availability
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - vehicles
+      security:
+        - bearer: []
+  /v1/drivers:
+    get:
+      operationId: DriversController_findAll
+      summary: List all drivers with cursor-based pagination
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - drivers
+      security:
+        - bearer: []
+    post:
+      operationId: DriversController_create
+      summary: Create a new driver
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+        - drivers
+      security:
+        - bearer: []
+  /v1/drivers/{id}:
+    get:
+      operationId: DriversController_findById
+      summary: Get driver by ID
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - drivers
+      security:
+        - bearer: []
+    patch:
+      operationId: DriversController_update
+      summary: Update driver
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - drivers
+      security:
+        - bearer: []
+    delete:
+      operationId: DriversController_delete
+      summary: Soft delete a driver
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags:
+        - drivers
+      security:
+        - bearer: []
+  /v1/drivers/{id}/availability:
+    get:
+      operationId: DriversController_checkAvailability
+      summary: Check driver availability
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - drivers
+      security:
+        - bearer: []
+  /v1/drivers/{id}/history:
+    get:
+      operationId: DriversController_getHistory
+      summary: Get driver trip history (last 20)
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - drivers
+      security:
+        - bearer: []
+  /v1/routes:
+    get:
+      operationId: RoutesController_findAll
+      summary: List all routes with cursor-based pagination
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - routes
+      security:
+        - bearer: []
+    post:
+      operationId: RoutesController_create
+      summary: Create a new route
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+        - routes
+      security:
+        - bearer: []
+  /v1/routes/{id}:
+    get:
+      operationId: RoutesController_findById
+      summary: Get route by ID with route points
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - routes
+      security:
+        - bearer: []
+    patch:
+      operationId: RoutesController_update
+      summary: Update route
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - routes
+      security:
+        - bearer: []
+    delete:
+      operationId: RoutesController_delete
+      summary: Soft delete a route
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags:
+        - routes
+      security:
+        - bearer: []
+  /v1/routes/{id}/points:
+    patch:
+      operationId: RoutesController_updatePoints
+      summary: Replace all route points
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - routes
+      security:
+        - bearer: []
+  /v1/clients:
+    get:
+      operationId: ClientsController_findAll
+      summary: List all clients with cursor-based pagination
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - clients
+      security:
+        - bearer: []
+    post:
+      operationId: ClientsController_create
+      summary: Create a new client
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+        - clients
+      security:
+        - bearer: []
+  /v1/clients/{id}:
+    get:
+      operationId: ClientsController_findById
+      summary: Get client by ID with contracts
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - clients
+      security:
+        - bearer: []
+    patch:
+      operationId: ClientsController_update
+      summary: Update client
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - clients
+      security:
+        - bearer: []
+    delete:
+      operationId: ClientsController_delete
+      summary: Soft delete a client
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags:
+        - clients
+      security:
+        - bearer: []
+  /v1/clients/{id}/contracts:
+    post:
+      operationId: ClientsController_createContract
+      summary: Create a contract for client
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags:
+        - clients
+      security:
+        - bearer: []
+  /v1/clients/{id}/contracts/{contractId}:
+    patch:
+      operationId: ClientsController_updateContract
+      summary: Update a client contract
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: contractId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - clients
+      security:
+        - bearer: []
+  /v1/clients/{id}/stats:
+    get:
+      operationId: ClientsController_getStats
+      summary: Get client statistics
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - clients
+      security:
+        - bearer: []
+  /v1/trips:
+    get:
+      operationId: TripsController_findAll
+      summary: List all trips with cursor-based pagination
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - trips
+      security:
+        - bearer: []
+    post:
+      operationId: TripsController_create
+      summary: Create a new trip (DRAFT status)
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+        - trips
+      security:
+        - bearer: []
+  /v1/trips/today:
+    get:
+      operationId: TripsController_findToday
+      summary: Get all trips scheduled for today
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - trips
+      security:
+        - bearer: []
+  /v1/trips/delayed:
+    get:
+      operationId: TripsController_findDelayed
+      summary: Get all delayed trips
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - trips
+      security:
+        - bearer: []
+  /v1/trips/{id}:
+    get:
+      operationId: TripsController_findById
+      summary: Get trip by ID
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - trips
+      security:
+        - bearer: []
+    patch:
+      operationId: TripsController_update
+      summary: Update trip (only DRAFT trips can be edited)
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - trips
+      security:
+        - bearer: []
+    delete:
+      operationId: TripsController_cancel
+      summary: Cancel a trip
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - trips
+      security:
+        - bearer: []
+  /v1/trips/{id}/status:
+    patch:
+      operationId: TripsController_changeStatus
+      summary: Change trip status
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - trips
+      security:
+        - bearer: []
+  /v1/trips/{id}/passengers:
+    post:
+      operationId: TripsController_addPassenger
+      summary: Add a passenger to the trip
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags:
+        - trips
+      security:
+        - bearer: []
+  /v1/trips/{id}/passengers/{passengerId}:
+    delete:
+      operationId: TripsController_removePassenger
+      summary: Remove a passenger from the trip
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: passengerId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ''
+      tags:
+        - trips
+      security:
+        - bearer: []
+  /v1/occurrences:
+    get:
+      operationId: OccurrencesController_findAll
+      summary: List all occurrences with cursor-based pagination
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - occurrences
+      security:
+        - bearer: []
+    post:
+      operationId: OccurrencesController_create
+      summary: Create a new occurrence
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+        - occurrences
+      security:
+        - bearer: []
+  /v1/occurrences/{id}:
+    get:
+      operationId: OccurrencesController_findById
+      summary: Get occurrence by ID
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - occurrences
+      security:
+        - bearer: []
+    patch:
+      operationId: OccurrencesController_update
+      summary: Update occurrence fields (not status)
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - occurrences
+      security:
+        - bearer: []
+  /v1/occurrences/{id}/status:
+    patch:
+      operationId: OccurrencesController_changeStatus
+      summary: Change occurrence status
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - occurrences
+      security:
+        - bearer: []
+  /v1/occurrences/{id}/resolve:
+    patch:
+      operationId: OccurrencesController_resolve
+      summary: Resolve an occurrence with action taken
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - occurrences
+      security:
+        - bearer: []
+  /v1/occurrences/{id}/escalate:
+    patch:
+      operationId: OccurrencesController_escalate
+      summary: Escalate occurrence to CRITICAL
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - occurrences
+      security:
+        - bearer: []
+  /v1/fuel-records:
+    get:
+      operationId: FuelController_findAll
+      summary: List all fuel records with cursor-based pagination
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - fuel
+      security:
+        - bearer: []
+    post:
+      operationId: FuelController_create
+      summary: Create a fuel record — validates odometer, detects anomaly
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+        - fuel
+      security:
+        - bearer: []
+  /v1/fuel-records/anomalies:
+    get:
+      operationId: FuelController_findAnomalies
+      summary: List fuel records with anomaly flag
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - fuel
+      security:
+        - bearer: []
+  /v1/fuel-records/stats:
+    get:
+      operationId: FuelController_getStats
+      summary: Get fuel consumption statistics
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - fuel
+      security:
+        - bearer: []
+  /v1/fuel-records/{id}:
+    get:
+      operationId: FuelController_findById
+      summary: Get fuel record by ID
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - fuel
+      security:
+        - bearer: []
+    patch:
+      operationId: FuelController_update
+      summary: Update non-critical fuel record fields
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - fuel
+      security:
+        - bearer: []
+  /v1/maintenance:
+    get:
+      operationId: MaintenanceController_findAll
+      summary: List maintenance orders with cursor pagination
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - maintenance
+      security:
+        - bearer: []
+    post:
+      operationId: MaintenanceController_create
+      summary: Create a new maintenance order
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags:
+        - maintenance
+      security:
+        - bearer: []
+  /v1/maintenance/preventive-due:
+    get:
+      operationId: MaintenanceController_getPreventiveDue
+      summary: List vehicles with overdue preventive maintenance (> 90 days)
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - maintenance
+      security:
+        - bearer: []
+  /v1/maintenance/{id}:
+    get:
+      operationId: MaintenanceController_findById
+      summary: Get maintenance order by ID
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - maintenance
+      security:
+        - bearer: []
+    patch:
+      operationId: MaintenanceController_update
+      summary: Update maintenance order fields
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - maintenance
+      security:
+        - bearer: []
+    delete:
+      operationId: MaintenanceController_cancel
+      summary: Cancel maintenance order
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - maintenance
+      security:
+        - bearer: []
+  /v1/maintenance/{id}/complete:
+    patch:
+      operationId: MaintenanceController_complete
+      summary: Mark maintenance order as completed
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - maintenance
+      security:
+        - bearer: []
+  /v1/maintenance/{id}/items:
+    post:
+      operationId: MaintenanceController_addItem
+      summary: Add item to maintenance order
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags:
+        - maintenance
+      security:
+        - bearer: []
+  /v1/maintenance/{id}/items/{itemId}:
+    delete:
+      operationId: MaintenanceController_removeItem
+      summary: Remove item from maintenance order
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: itemId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - maintenance
+      security:
+        - bearer: []
+  /v1/finance/summary:
+    get:
+      operationId: FinanceController_getSummary
+      summary: Get financial summary for a period
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - finance
+      security:
+        - bearer: []
+  /v1/finance/revenue-by-client:
+    get:
+      operationId: FinanceController_getRevenueByClient
+      summary: Get revenue breakdown by client
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - finance
+      security:
+        - bearer: []
+  /v1/finance/cost-by-vehicle:
+    get:
+      operationId: FinanceController_getCostByVehicle
+      summary: Get cost breakdown by vehicle
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - finance
+      security:
+        - bearer: []
+  /v1/notifications:
+    get:
+      operationId: NotificationsController_findAll
+      summary: List notifications for the authenticated user
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - notifications
+      security:
+        - bearer: []
+  /v1/notifications/unread-count:
+    get:
+      operationId: NotificationsController_findUnreadCount
+      summary: Get count of unread notifications for the authenticated user
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - notifications
+      security:
+        - bearer: []
+  /v1/notifications/read-all:
+    patch:
+      operationId: NotificationsController_markAllAsRead
+      summary: Mark all notifications as read for the authenticated user
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - notifications
+      security:
+        - bearer: []
+  /v1/notifications/{id}/read:
+    patch:
+      operationId: NotificationsController_markAsRead
+      summary: Mark a single notification as read
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - notifications
+      security:
+        - bearer: []
+  /v1/audit:
+    get:
+      operationId: AuditController_findAll
+      summary: List audit logs for the current tenant (CEO/Manager only)
+      description: Cursor-based pagination ordered by createdAt DESC. Strictly tenant-isolated — cannot access other tenant data.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - audit
+      security:
+        - bearer: []
+  /v1/audit/{id}:
+    get:
+      operationId: AuditController_findById
+      summary: Get audit log entry by ID
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - audit
+      security:
+        - bearer: []
+  /v1/dashboards/executive:
+    get:
+      operationId: AnalyticsController_getExecutiveDashboard
+      summary: Executive dashboard KPIs
+      description: 'Real-time executive metrics. Cache TTL: 60 seconds.'
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - analytics
+      security:
+        - bearer: []
+  /v1/dashboards/operation:
+    get:
+      operationId: AnalyticsController_getOperationDashboard
+      summary: Operation dashboard — today trips, occurrences, delays
+      description: 'Operational view for dispatchers. Cache TTL: 60 seconds.'
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - analytics
+      security:
+        - bearer: []
+  /v1/dashboards/fleet:
+    get:
+      operationId: AnalyticsController_getFleetDashboard
+      summary: Fleet dashboard — vehicle status, maintenance, documents
+      description: 'Fleet management overview. Cache TTL: 60 seconds.'
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - analytics
+      security:
+        - bearer: []
+  /v1/dashboards/fuel:
+    get:
+      operationId: AnalyticsController_getFuelDashboard
+      summary: Fuel dashboard — consumption, costs, anomalies
+      description: 'Fuel analytics for the given period (defaults to current month). Cache TTL: 60 seconds.'
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - analytics
+      security:
+        - bearer: []
+info:
+  title: Gestão Fretamento Pro API
+  description: API REST para gestão de fretamento empresarial
+  version: 1.0.0
+  contact: {}
+tags:
+  - name: auth
+    description: Autenticação e autorização
+  - name: tenants
+    description: Gestão de empresas e filiais
+  - name: users
+    description: Gestão de usuários
+  - name: roles
+    description: Gestão de cargos e permissões
+  - name: vehicles
+    description: Gestão de frota
+  - name: drivers
+    description: Gestão de motoristas
+  - name: trips
+    description: Gestão de viagens
+  - name: clients
+    description: Gestão de clientes
+  - name: occurrences
+    description: Gestão de ocorrências
+  - name: fuel
+    description: Controle de abastecimento
+  - name: maintenance
+    description: Gestão de manutenção
+  - name: documents
+    description: Gestão de documentos
+  - name: notifications
+    description: Notificações
+  - name: analytics
+    description: Dashboards e analytics
+  - name: audit
+    description: Logs de auditoria
+  - name: health
+    description: Health checks
+servers: []
+components:
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+  schemas:
+    TokenUserDto:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - tenantId
+        - name
+        - email
+        - permissions
+    TokenPairDto:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        accessTokenExpiresAt:
+          format: date-time
+          type: string
+        refreshTokenExpiresAt:
+          format: date-time
+          type: string
+        user:
+          $ref: '#/components/schemas/TokenUserDto'
+      required:
+        - accessToken
+        - refreshToken
+        - accessTokenExpiresAt
+        - refreshTokenExpiresAt
+        - user
+    UserWithPermissionsDto:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        employeeId:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+        lastLoginAt:
+          format: date-time
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+        roleId:
+          type: string
+        roleName:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - tenantId
+        - name
+        - email
+        - status
+        - createdAt
+        - updatedAt
+        - permissions
+    UserResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        employeeId:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+        lastLoginAt:
+          format: date-time
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+      required:
+        - id
+        - tenantId
+        - name
+        - email
+        - status
+        - createdAt
+        - updatedAt

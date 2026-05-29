@@ -84,6 +84,8 @@
 
 **O que foi feito:**
 - Criação de especificações de contratos Pact JSON em `tests/contracts/pacts/` cobrindo Auth, Trips, Fuel e Dashboards.
+- Implementação dos testes de consumidor Pact (`.pact.ts`) correspondentes em `tests/contracts/`.
+- Configuração de dependências de teste de contrato na raiz do monorepo.
 - Configuração de thresholds de Core Web Vitals no `.lighthouserc.json`.
 
 ## 28/05/2026 - 100% — FASE 10 — Integração com API Real e Polish Final
@@ -94,5 +96,6 @@
 - Correção de erros críticos de tipo em `@gestao-fretamento-pro/database` relacionados à estrutura Prisma.
 - Correção de colisão de tipos `Permission` em `@gestao-fretamento-pro/types`.
 - Correção de bugs de escopo no middleware de NextJS e locators Playwright.
-- Execução final de typecheck de todos os 11 subprojetos do monorepo com sucesso (`pnpm typecheck` com código 0).
+- Execução final de typecheck de todos os subprojetos do monorepo com sucesso (`pnpm typecheck` com código 0).
 - Compilação limpa do bundle de produção do frontend (`pnpm --filter web-admin build` com código 0).
+

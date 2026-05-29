@@ -7,10 +7,13 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "openapi:generate": "pnpm --filter @gestao-fretamento-pro/api-core exec ts-node src/generate-openapi.ts"
   },
   "devDependencies": {
+    "@pact-foundation/pact": "^12.1.0",
     "@playwright/test": "^1.41.2",
+    "ts-node": "^10.9.2",
     "turbo": "^2.9.15"
   },
   "engines": {

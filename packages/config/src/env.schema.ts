@@ -49,7 +49,7 @@ export const EnvSchema = z.object({
     .positive()
     .default(3000),
   NODE_ENV: z
-    .enum(['development', 'staging', 'production'])
+    .enum(['development', 'staging', 'production', 'test'])
     .default('development'),
   APP_URL: z.string().url({ message: 'APP_URL must be a valid URL' }),
   CORS_ORIGINS: z

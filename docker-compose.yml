@@ -1,0 +1,124 @@
+version: '3.9'
+
+services:
+  # ─────────────────────────────
+  # PostgreSQL 16 com extensões (pgvector incluso)
+  # ─────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: gfp-postgres
+    environment:
+      POSTGRES_USER: gfp
+      POSTGRES_PASSWORD: gfp_dev_password
+      POSTGRES_DB: gestao_fretamento_pro
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U gfp -d gestao_fretamento_pro']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gfp-network
+
+  # ─────────────────────────────
+  # Redis 7
+  # ─────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: gfp-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gfp-network
+
+  # ─────────────────────────────
+  # API Core (desenvolvimento com hot reload)
+  # ─────────────────────────────
+  api-core:
+    build:
+      context: .
+      dockerfile: infra/docker/api-core/Dockerfile
+      target: deps  # Use deps stage for dev — mounts source via volume
+    container_name: gfp-api-core
+    command: pnpm --filter @gestao-fretamento-pro/api-core dev
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://gfp:gfp_dev_password@postgres:5432/gestao_fretamento_pro
+      DIRECT_URL: postgresql://gfp:gfp_dev_password@postgres:5432/gestao_fretamento_pro
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-must-be-at-least-32-chars-long
+      JWT_REFRESH_SECRET: dev-refresh-secret-must-be-at-least-32-chars
+      PORT: 3000
+      APP_URL: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3001,http://localhost:3000
+      FRONTEND_URL: http://localhost:3001
+      LOG_LEVEL: debug
+      OTEL_SERVICE_NAME: api-core
+    ports:
+      - '3000:3000'
+      - '9464:9464'  # Prometheus metrics
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/api-core/dist
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - gfp-network
+    restart: unless-stopped
+
+  # ─────────────────────────────
+  # Worker (desenvolvimento com hot reload)
+  # ─────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: infra/docker/worker/Dockerfile
+      target: deps
+    container_name: gfp-worker
+    command: pnpm --filter @gestao-fretamento-pro/worker dev
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://gfp:gfp_dev_password@postgres:5432/gestao_fretamento_pro
+      DIRECT_URL: postgresql://gfp:gfp_dev_password@postgres:5432/gestao_fretamento_pro
+      REDIS_URL: redis://redis:6379
+      WORKER_PORT: 3001
+      LOG_LEVEL: debug
+      OTEL_SERVICE_NAME: worker
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/worker/dist
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - gfp-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  gfp-network:
+    driver: bridge

@@ -1,0 +1,38 @@
+{
+  "name": "@gestao-fretamento-pro/worker",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "nest build",
+    "start": "node dist/main",
+    "dev": "nest start --watch",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@gestao-fretamento-pro/config": "workspace:*",
+    "@gestao-fretamento-pro/database": "workspace:*",
+    "@gestao-fretamento-pro/types": "workspace:*",
+    "@nestjs/bull": "^10.2.1",
+    "@nestjs/common": "^10.3.10",
+    "@nestjs/config": "^3.2.3",
+    "@nestjs/core": "^10.3.10",
+    "@nestjs/platform-express": "^10.3.10",
+    "@nestjs/schedule": "^4.1.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.49.0",
+    "@opentelemetry/sdk-node": "^0.52.0",
+    "@prisma/client": "^5.15.0",
+    "bull": "^4.16.3",
+    "ioredis": "^5.4.1",
+    "pino": "^9.2.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@gestao-fretamento-pro/tsconfig": "workspace:*",
+    "@nestjs/cli": "^10.4.2",
+    "@types/bull": "^4.10.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,203 @@
+name: Deploy to Staging
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  ECS_CLUSTER: gfp-staging
+  API_CORE_SERVICE: gfp-staging-api-core
+  WORKER_SERVICE: gfp-staging-worker
+  STAGING_API_URL: https://api.staging.gestao-fretamento.com.br
+
+jobs:
+  deploy-staging:
+    name: Deploy to staging
+    runs-on: ubuntu-latest
+    # Only proceed if the CI workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment:
+      name: staging
+      url: ${{ env.STAGING_API_URL }}
+    concurrency:
+      group: staging-deploy
+      cancel-in-progress: false  # Never cancel a running deploy — let it finish
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      # ─────────────────────────────────────────
+      # AWS credentials
+      # ─────────────────────────────────────────
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ─────────────────────────────────────────
+      # Database migrations (before deploying new code)
+      # Uses DIRECT_URL to bypass PgBouncer
+      # ─────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '11.4.0'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run database migrations
+        run: pnpm --filter @gestao-fretamento-pro/database exec prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+
+      # ─────────────────────────────────────────
+      # Deploy api-core with circuit breaker
+      # If deployment fails, ECS auto-rolls back
+      # ─────────────────────────────────────────
+      - name: Get current api-core task definition
+        id: current-task-api
+        run: |
+          TASK_DEF=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.API_CORE_SERVICE }} \
+            --query 'services[0].taskDefinition' \
+            --output text)
+          echo "arn=${TASK_DEF}" >> $GITHUB_OUTPUT
+
+      - name: Update api-core task definition with new image
+        id: new-task-api
+        run: |
+          TASK_DEF_JSON=$(aws ecs describe-task-definition \
+            --task-definition ${{ steps.current-task-api.outputs.arn }} \
+            --query 'taskDefinition' \
+            --output json)
+
+          NEW_TASK_DEF=$(echo "$TASK_DEF_JSON" | jq \
+            --arg IMAGE "ghcr.io/${{ github.repository }}/api-core:${{ github.event.workflow_run.head_sha }}" \
+            '.containerDefinitions[0].image = $IMAGE |
+             del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .placementConstraints, .compatibilities, .registeredAt, .registeredBy)')
+
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "$NEW_TASK_DEF" \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "arn=${NEW_TASK_DEF_ARN}" >> $GITHUB_OUTPUT
+
+      - name: Deploy api-core (force new deployment)
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.API_CORE_SERVICE }} \
+            --task-definition ${{ steps.new-task-api.outputs.arn }} \
+            --force-new-deployment
+
+      - name: Wait for api-core deployment stability (max 10 min)
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.API_CORE_SERVICE }}
+        timeout-minutes: 10
+
+      # ─────────────────────────────────────────
+      # Smoke tests — verify deployment
+      # ─────────────────────────────────────────
+      - name: Health check — liveness
+        run: |
+          echo "Checking /v1/health..."
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.STAGING_API_URL }}/v1/health")
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Health check passed (attempt ${i})"
+              break
+            fi
+            echo "  Attempt ${i} failed (status: ${STATUS}) — retrying in 10s..."
+            sleep 10
+          done
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Health check failed after 5 attempts"
+            exit 1
+          fi
+
+      - name: Health check — readiness
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.STAGING_API_URL }}/v1/health/ready")
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Readiness check failed (status: ${STATUS})"
+            exit 1
+          fi
+          echo "✅ Readiness check passed"
+
+      # ─────────────────────────────────────────
+      # Deploy worker after api-core is stable
+      # ─────────────────────────────────────────
+      - name: Get current worker task definition
+        id: current-task-worker
+        run: |
+          TASK_DEF=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.WORKER_SERVICE }} \
+            --query 'services[0].taskDefinition' \
+            --output text)
+          echo "arn=${TASK_DEF}" >> $GITHUB_OUTPUT
+
+      - name: Update worker task definition with new image
+        id: new-task-worker
+        run: |
+          TASK_DEF_JSON=$(aws ecs describe-task-definition \
+            --task-definition ${{ steps.current-task-worker.outputs.arn }} \
+            --query 'taskDefinition' \
+            --output json)
+
+          NEW_TASK_DEF=$(echo "$TASK_DEF_JSON" | jq \
+            --arg IMAGE "ghcr.io/${{ github.repository }}/worker:${{ github.event.workflow_run.head_sha }}" \
+            '.containerDefinitions[0].image = $IMAGE |
+             del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .placementConstraints, .compatibilities, .registeredAt, .registeredBy)')
+
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "$NEW_TASK_DEF" \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "arn=${NEW_TASK_DEF_ARN}" >> $GITHUB_OUTPUT
+
+      - name: Deploy worker
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.WORKER_SERVICE }} \
+            --task-definition ${{ steps.new-task-worker.outputs.arn }} \
+            --force-new-deployment
+
+      - name: Wait for worker deployment stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.WORKER_SERVICE }}
+        timeout-minutes: 5
+
+      # ─────────────────────────────────────────
+      # Deployment summary
+      # ─────────────────────────────────────────
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "## Staging Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${{ github.event.workflow_run.head_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **api-core image:** \`ghcr.io/${{ github.repository }}/api-core:${{ github.event.workflow_run.head_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **worker image:** \`ghcr.io/${{ github.repository }}/worker:${{ github.event.workflow_run.head_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **API URL:** ${{ env.STAGING_API_URL }}" >> $GITHUB_STEP_SUMMARY

@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        run: pnpm --filter @gestao-fretamento-pro/database db:generate
+
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
@@ -214,6 +217,7 @@ jobs:
       - name: Upload Trivy SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         if: always()
+        continue-on-error: true  # Requires GitHub Advanced Security — skip gracefully if not enabled
         with:
           sarif_file: 'trivy-results.sarif'
 

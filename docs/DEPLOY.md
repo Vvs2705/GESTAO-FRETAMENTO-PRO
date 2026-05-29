@@ -85,21 +85,33 @@ A API ficará em `https://gfp-api-core.fly.dev` (health: `/v1/health`).
 
 ## 3. Frontend — Vercel
 
-1. Importe o repositório no Vercel.
-2. **Root Directory:** `apps/web-admin` (Vercel detecta o workspace pnpm na raiz).
-3. **Environment Variable:**
-   ```
-   NEXT_PUBLIC_API_URL = https://gfp-api-core.fly.dev/v1
-   ```
-4. Após o deploy do front, atualize o `CORS_ORIGINS` do backend com a URL final
-   da Vercel e rode `flyctl deploy -c fly.api.toml` novamente (ou apenas
-   `flyctl secrets set`).
+> **Estado atual:** projeto `gestao-fretamento-web` criado no time `v-stack-solution`,
+> com a env var `NEXT_PUBLIC_API_URL=https://gfp-api-core.fly.dev/v1` já configurada
+> (production + preview).
+>
+> **Importante (monorepo pnpm):** o deploy por CLI (`vercel deploy`) NÃO funciona bem
+> aqui — ele sobe só o subdiretório e quebra em `workspace:*`. O caminho correto e
+> confiável é a **integração Git com Root Directory**, que usa o pipeline remoto do
+> Vercel (lida nativamente com pnpm workspace + Next.js App Router).
 
-Via CLI (a partir de `apps/web-admin`):
+### Passo único restante (painel Vercel)
+1. Vercel → projeto **gestao-fretamento-web** → **Settings → Build & Deployment**.
+2. **Root Directory** = `apps/web-admin` → salvar.
+   (O Vercel detecta o `pnpm-workspace.yaml` na raiz e instala lá automaticamente.)
+3. **Settings → Git** → conectar o repositório `Vvs2705/GESTAO-FRETAMENTO-PRO`
+   (se ainda não estiver conectado).
+4. **Deployments → Redeploy** (ou faça um push em `main` — passa a fazer deploy automático).
+
+A env var já está setada. Após o primeiro deploy, copie a URL final da Vercel
+(ex.: `https://gestao-fretamento-web.vercel.app`) e atualize o CORS do backend:
 ```bash
-cd apps/web-admin
-vercel --prod -e NEXT_PUBLIC_API_URL="https://gfp-api-core.fly.dev/v1"
+flyctl secrets set -a gfp-api-core CORS_ORIGINS="https://gestao-fretamento-web.vercel.app"
 ```
+
+### Alternativa: importar do zero
+Vercel → Add New → Project → importar `Vvs2705/GESTAO-FRETAMENTO-PRO` →
+Root Directory = `apps/web-admin` → add env var `NEXT_PUBLIC_API_URL` →
+Deploy. O Vercel detecta Next.js + pnpm workspace e builda corretamente.
 
 ---
 

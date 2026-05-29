@@ -100,3 +100,5 @@ storybook-static/
 
 # Claude Code — agent memory and session files
 .claude/
+
+.vercel

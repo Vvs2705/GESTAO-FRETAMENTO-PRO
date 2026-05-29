@@ -26,3 +26,4 @@ export * from './notification.types';
 export * from './events.types';
 export * from './permissions.types';
 export * from './dashboard.types';
+export * from './api.generated';

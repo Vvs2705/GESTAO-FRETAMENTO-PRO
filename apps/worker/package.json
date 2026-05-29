@@ -11,6 +11,8 @@
     "test": "echo \"No unit tests in worker — integration tests only\" && exit 0"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.620.0",
+    "@aws-sdk/s3-request-presigner": "^3.620.0",
     "@gestao-fretamento-pro/config": "workspace:*",
     "@gestao-fretamento-pro/database": "workspace:*",
     "@gestao-fretamento-pro/types": "workspace:*",
@@ -24,6 +26,7 @@
     "@opentelemetry/sdk-node": "^0.52.0",
     "@prisma/client": "^5.15.0",
     "bull": "^4.16.3",
+    "exceljs": "^4.4.0",
     "ioredis": "^5.4.1",
     "pino": "^9.2.0",
     "reflect-metadata": "^0.2.2",

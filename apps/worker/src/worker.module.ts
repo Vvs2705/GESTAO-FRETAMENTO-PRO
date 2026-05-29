@@ -5,6 +5,7 @@ import { BullModule } from '@nestjs/bull';
 import { EnvSchema } from '@gestao-fretamento-pro/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
+import { S3Module } from './s3/s3.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { NotificationModule } from './notifications/notification.module';
 import { DocumentExpiryModule } from './documents/document-expiry.module';
@@ -37,6 +38,7 @@ import { ReportsModule } from './reports/reports.module';
     }),
     PrismaModule,
     RedisModule,
+    S3Module,
     OutboxModule,
     NotificationModule,
     DocumentExpiryModule,

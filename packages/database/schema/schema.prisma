@@ -66,25 +66,37 @@ model Tenant {
 }
 
 model Branch {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId  String    @db.Uuid @map("tenant_id")
-  name      String    @db.VarChar(200)
-  city      String    @db.VarChar(100)
-  state     String    @db.VarChar(2)
-  address   String?   @db.Text
-  zipCode   String?   @db.VarChar(10) @map("zip_code")
-  phone     String?   @db.VarChar(30)
-  status    String    @db.VarChar(50) @default("ACTIVE")
-  createdAt DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
-  updatedAt DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
-  deletedAt DateTime? @db.Timestamptz(6) @map("deleted_at")
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @db.Uuid @map("tenant_id")
+  name        String    @db.VarChar(200)
+  type        String    @db.VarChar(50) @default("BRANCH")
+  // headquarters | garage | fuel_base | maintenance_yard | branch | external_yard
+  city        String    @db.VarChar(100)
+  state       String    @db.VarChar(2)
+  address     String?   @db.Text
+  zipCode     String?   @db.VarChar(10) @map("zip_code")
+  phone       String?   @db.VarChar(30)
+  latitude    Decimal?  @db.Decimal(10, 7)
+  longitude   Decimal?  @db.Decimal(10, 7)
+  status      String    @db.VarChar(50) @default("ACTIVE")
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt   DateTime? @db.Timestamptz(6) @map("deleted_at")
 
-  tenant      Tenant       @relation(fields: [tenantId], references: [id])
-  employees   Employee[]
-  vehicles    Vehicle[]
-  fuelRecords FuelRecord[]
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  employees           Employee[]
+  vehicles            Vehicle[]
+  fuelRecords         FuelRecord[]
+  fuelTanks           FuelTank[]
+  fuelPumps           FuelPump[]
+  internalFuelings    InternalFueling[]
+  externalFuelings    ExternalFueling[]
+  fuelDeliveries      FuelDelivery[]
+  fuelInventoryMovements FuelInventoryMovement[]
+  fuelIncidents       FuelIncident[]
 
   @@index([tenantId, status])
+  @@index([tenantId, type])
   @@map("branches")
 }
 
@@ -245,14 +257,16 @@ model Vehicle {
   updatedBy       String?   @db.Uuid @map("updated_by")
   deletedAt       DateTime? @db.Timestamptz(6) @map("deleted_at")
 
-  tenant            Tenant             @relation(fields: [tenantId], references: [id])
-  branch            Branch?            @relation(fields: [branchId], references: [id])
-  trips             Trip[]
-  drivers           Driver[]           @relation("DriverVehicle")
-  fuelRecords       FuelRecord[]
-  maintenanceOrders MaintenanceOrder[]
-  documents         Document[]
-  occurrences       Occurrence[]
+  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  branch             Branch?             @relation(fields: [branchId], references: [id])
+  trips              Trip[]
+  drivers            Driver[]            @relation("DriverVehicle")
+  fuelRecords        FuelRecord[]
+  maintenanceOrders  MaintenanceOrder[]
+  documents          Document[]
+  occurrences        Occurrence[]
+  internalFuelings   InternalFueling[]
+  externalFuelings   ExternalFueling[]
 
   @@unique([tenantId, plate])
   @@index([tenantId, status])
@@ -713,4 +727,554 @@ model IdempotencyKey {
   @@id([key, tenantId])
   @@index([expiresAt])
   @@map("idempotency_keys")
+}
+
+// ============================================================
+// ABAC — USER BRANCH SCOPE
+// ============================================================
+
+model UserBranchScope {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @db.Uuid @map("tenant_id")
+  userId    String   @db.Uuid @map("user_id")
+  branchId  String   @db.Uuid @map("branch_id")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  @@unique([tenantId, userId, branchId])
+  @@index([tenantId, userId])
+  @@map("user_branch_scopes")
+}
+
+// ============================================================
+// FUEL — PRODUTOS, FORNECEDORES, TANQUES, BOMBAS
+// ============================================================
+
+model FuelProduct {
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String? @db.Uuid @map("tenant_id") // null = produto global do sistema
+  code     String  @db.VarChar(30)
+  name     String  @db.VarChar(100)
+  type     String  @db.VarChar(30)
+  // diesel_s10 | diesel_s500 | gasoline | ethanol | arla32 | electric_charge | other
+  unit     String  @db.VarChar(10) @default("liter")
+  // liter | kwh
+  active   Boolean @default(true)
+
+  fuelTanks          FuelTank[]
+  internalFuelings   InternalFueling[]
+  externalFuelings   ExternalFueling[]
+  fuelDeliveries     FuelDelivery[]
+  inventoryMovements FuelInventoryMovement[]
+
+  @@unique([code])
+  @@index([active])
+  @@map("fuel_products")
+}
+
+model FuelSupplier {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @db.Uuid @map("tenant_id")
+  legalName   String    @db.VarChar(200) @map("legal_name")
+  tradeName   String?   @db.VarChar(200) @map("trade_name")
+  document    String    @db.VarChar(20) // CNPJ
+  contactName String?   @db.VarChar(200) @map("contact_name")
+  phone       String?   @db.VarChar(30)
+  email       String?   @db.VarChar(300)
+  address     String?   @db.Text
+  approved    Boolean   @default(false)
+  status      String    @db.VarChar(50) @default("ACTIVE")
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt   DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  deliveries FuelDelivery[]
+
+  @@unique([tenantId, document])
+  @@index([tenantId, approved, status])
+  @@map("fuel_suppliers")
+}
+
+model FuelTank {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String    @db.Uuid @map("tenant_id")
+  branchId             String    @db.Uuid @map("branch_id")
+  fuelProductId        String    @db.Uuid @map("fuel_product_id")
+  name                 String    @db.VarChar(100)
+  code                 String    @db.VarChar(30)
+  capacityLiters       Decimal   @db.Decimal(10, 3) @map("capacity_liters")
+  currentStockLiters   Decimal   @db.Decimal(10, 3) @default(0) @map("current_stock_liters")
+  minimumStockLiters   Decimal   @db.Decimal(10, 3) @default(0) @map("minimum_stock_liters")
+  warningStockLiters   Decimal   @db.Decimal(10, 3) @default(0) @map("warning_stock_liters")
+  physicalLocation     String?   @db.VarChar(200) @map("physical_location")
+  status               String    @db.VarChar(50) @default("ACTIVE")
+  // active | maintenance | inactive | blocked
+  lastCalibrationAt    DateTime? @db.Timestamptz(6) @map("last_calibration_at")
+  notes                String?   @db.Text
+  createdAt            DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt            DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt            DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  branch             Branch                  @relation(fields: [branchId], references: [id])
+  fuelProduct        FuelProduct             @relation(fields: [fuelProductId], references: [id])
+  pumps              FuelPump[]
+  deliveries         FuelDelivery[]
+  internalFuelings   InternalFueling[]
+  inventoryMovements FuelInventoryMovement[]
+  incidents          FuelIncident[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, branchId, status])
+  @@map("fuel_tanks")
+}
+
+model FuelPump {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String    @db.Uuid @map("tenant_id")
+  branchId           String    @db.Uuid @map("branch_id")
+  fuelTankId         String    @db.Uuid @map("fuel_tank_id")
+  name               String    @db.VarChar(100)
+  code               String    @db.VarChar(30)
+  meterType          String    @db.VarChar(30) @map("meter_type")
+  // mechanical | digital | integrated | manual
+  currentMeterReading Decimal  @db.Decimal(12, 3) @default(0) @map("current_meter_reading")
+  status             String    @db.VarChar(50) @default("ACTIVE")
+  lastInspectionAt   DateTime? @db.Timestamptz(6) @map("last_inspection_at")
+  notes              String?   @db.Text
+  createdAt          DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt          DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  branch           Branch            @relation(fields: [branchId], references: [id])
+  fuelTank         FuelTank          @relation(fields: [fuelTankId], references: [id])
+  internalFuelings InternalFueling[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, branchId, status])
+  @@map("fuel_pumps")
+}
+
+// ============================================================
+// FUEL — ABASTECIMENTO INTERNO
+// ============================================================
+
+model InternalFueling {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String    @db.Uuid @map("tenant_id")
+  branchId             String    @db.Uuid @map("branch_id")
+  vehicleId            String    @db.Uuid @map("vehicle_id")
+  driverId             String?   @db.Uuid @map("driver_id")
+  attendantUserId      String    @db.Uuid @map("attendant_user_id")
+  fuelTankId           String    @db.Uuid @map("fuel_tank_id")
+  fuelPumpId           String?   @db.Uuid @map("fuel_pump_id")
+  fuelProductId        String    @db.Uuid @map("fuel_product_id")
+  odometer             Decimal   @db.Decimal(10, 1)
+  hourmeter            Decimal?  @db.Decimal(10, 1)
+  liters               Decimal   @db.Decimal(10, 3)
+  meterBefore          Decimal?  @db.Decimal(12, 3) @map("meter_before")
+  meterAfter           Decimal?  @db.Decimal(12, 3) @map("meter_after")
+  unitCostCalculated   Decimal?  @db.Decimal(19, 4) @map("unit_cost_calculated")
+  totalCostCalculated  Decimal?  @db.Decimal(19, 4) @map("total_cost_calculated")
+  tripId               String?   @db.Uuid @map("trip_id")
+  routeId              String?   @db.Uuid @map("route_id")
+  occurredAt           DateTime  @db.Timestamptz(6) @map("occurred_at")
+  latitude             Decimal?  @db.Decimal(10, 7)
+  longitude            Decimal?  @db.Decimal(10, 7)
+  status               String    @db.VarChar(50) @default("DRAFT")
+  // draft | completed | under_review | approved | rejected | corrected
+  anomalyFlag          Boolean   @default(false) @map("anomaly_flag")
+  anomalyReason        String?   @db.Text @map("anomaly_reason")
+  approvedByUserId     String?   @db.Uuid @map("approved_by_user_id")
+  approvedAt           DateTime? @db.Timestamptz(6) @map("approved_at")
+  notes                String?   @db.Text
+  // Mobile sync fields
+  clientGeneratedId    String?   @db.VarChar(100) @map("client_generated_id")
+  deviceId             String?   @db.VarChar(100) @map("device_id")
+  localCreatedAt       DateTime? @db.Timestamptz(6) @map("local_created_at")
+  syncStatus           String    @db.VarChar(30) @default("SYNCED") @map("sync_status")
+  idempotencyKey       String?   @db.VarChar(255) @map("idempotency_key")
+  createdAt            DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt            DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt            DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  branch      Branch                     @relation(fields: [branchId], references: [id])
+  vehicle     Vehicle                    @relation(fields: [vehicleId], references: [id])
+  fuelTank    FuelTank                   @relation(fields: [fuelTankId], references: [id])
+  fuelPump    FuelPump?                  @relation(fields: [fuelPumpId], references: [id])
+  fuelProduct FuelProduct                @relation(fields: [fuelProductId], references: [id])
+  evidences   InternalFuelingEvidence[]
+  incidents   FuelIncident[]
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, vehicleId, occurredAt(sort: Desc)])
+  @@index([tenantId, branchId, status])
+  @@index([tenantId, anomalyFlag])
+  @@map("internal_fuelings")
+}
+
+model InternalFuelingEvidence {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String   @db.Uuid @map("tenant_id")
+  internalFuelingId String   @db.Uuid @map("internal_fueling_id")
+  type              String   @db.VarChar(50)
+  // odometer_photo | vehicle_photo | pump_photo | signature | qr_code | other
+  fileUrl           String   @db.Text @map("file_url")
+  metadata          Json?    @db.JsonB
+  uploadedByUserId  String   @db.Uuid @map("uploaded_by_user_id")
+  createdAt         DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  internalFueling InternalFueling @relation(fields: [internalFuelingId], references: [id])
+
+  @@index([tenantId, internalFuelingId])
+  @@map("internal_fueling_evidences")
+}
+
+// ============================================================
+// FUEL — ABASTECIMENTO EXTERNO
+// ============================================================
+
+model ExternalFueling {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String    @db.Uuid @map("tenant_id")
+  branchId            String?   @db.Uuid @map("branch_id")
+  vehicleId           String    @db.Uuid @map("vehicle_id")
+  driverId            String    @db.Uuid @map("driver_id")
+  fuelStationId       String?   @db.Uuid @map("fuel_station_id")
+  stationNameFree     String?   @db.VarChar(200) @map("station_name_free")
+  fuelProductId       String    @db.Uuid @map("fuel_product_id")
+  odometer            Decimal   @db.Decimal(10, 1)
+  liters              Decimal   @db.Decimal(10, 3)
+  unitPrice           Decimal   @db.Decimal(19, 4) @map("unit_price")
+  totalAmount         Decimal   @db.Decimal(19, 4) @map("total_amount")
+  paymentMethod       String    @db.VarChar(50) @map("payment_method")
+  // cash | corporate_card | invoice | pix | reimbursement | other
+  receiptNumber       String?   @db.VarChar(100) @map("receipt_number")
+  receiptPhotoUrl     String?   @db.Text @map("receipt_photo_url")
+  receiptAccessKey    String?   @db.VarChar(100) @map("receipt_access_key")
+  occurredAt          DateTime  @db.Timestamptz(6) @map("occurred_at")
+  latitude            Decimal?  @db.Decimal(10, 7)
+  longitude           Decimal?  @db.Decimal(10, 7)
+  tripId              String?   @db.Uuid @map("trip_id")
+  status              String    @db.VarChar(50) @default("DRAFT")
+  // draft | submitted | under_review | approved | rejected | reimbursed | corrected
+  approvedByUserId    String?   @db.Uuid @map("approved_by_user_id")
+  approvedAt          DateTime? @db.Timestamptz(6) @map("approved_at")
+  anomalyFlag         Boolean   @default(false) @map("anomaly_flag")
+  anomalyReason       String?   @db.Text @map("anomaly_reason")
+  notes               String?   @db.Text
+  // Mobile sync
+  clientGeneratedId   String?   @db.VarChar(100) @map("client_generated_id")
+  deviceId            String?   @db.VarChar(100) @map("device_id")
+  localCreatedAt      DateTime? @db.Timestamptz(6) @map("local_created_at")
+  idempotencyKey      String?   @db.VarChar(255) @map("idempotency_key")
+  createdAt           DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt           DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt           DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  branch      Branch?                    @relation(fields: [branchId], references: [id])
+  vehicle     Vehicle                    @relation(fields: [vehicleId], references: [id])
+  fuelProduct FuelProduct                @relation(fields: [fuelProductId], references: [id])
+  evidences   ExternalFuelingEvidence[]
+  incidents   FuelIncident[]
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, vehicleId, occurredAt(sort: Desc)])
+  @@index([tenantId, driverId, occurredAt(sort: Desc)])
+  @@index([tenantId, status])
+  @@map("external_fuelings")
+}
+
+model ExternalFuelingEvidence {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String   @db.Uuid @map("tenant_id")
+  externalFuelingId  String   @db.Uuid @map("external_fueling_id")
+  type               String   @db.VarChar(50)
+  // receipt_photo | odometer_photo | vehicle_photo | signature | other
+  fileUrl            String   @db.Text @map("file_url")
+  metadata           Json?    @db.JsonB
+  uploadedByUserId   String   @db.Uuid @map("uploaded_by_user_id")
+  createdAt          DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  externalFueling ExternalFueling @relation(fields: [externalFuelingId], references: [id])
+
+  @@index([tenantId, externalFuelingId])
+  @@map("external_fueling_evidences")
+}
+
+// ============================================================
+// FUEL — ENTREGA POR CARRETA / CAMINHÃO-TANQUE
+// ============================================================
+
+model FuelDelivery {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String    @db.Uuid @map("tenant_id")
+  branchId            String    @db.Uuid @map("branch_id")
+  supplierId          String    @db.Uuid @map("supplier_id")
+  fuelProductId       String    @db.Uuid @map("fuel_product_id")
+  fuelTankId          String    @db.Uuid @map("fuel_tank_id")
+  deliveryDate        DateTime  @db.Timestamptz(6) @map("delivery_date")
+  invoiceNumber       String    @db.VarChar(100) @map("invoice_number")
+  invoiceAccessKey    String?   @db.VarChar(100) @map("invoice_access_key")
+  contractedLiters    Decimal   @db.Decimal(10, 3) @map("contracted_liters")
+  declaredLiters      Decimal   @db.Decimal(10, 3) @map("declared_liters")
+  receivedLiters      Decimal?  @db.Decimal(10, 3) @map("received_liters")
+  acceptedLiters      Decimal?  @db.Decimal(10, 3) @map("accepted_liters")
+  rejectedLiters      Decimal?  @db.Decimal(10, 3) @map("rejected_liters")
+  unitPrice           Decimal   @db.Decimal(19, 4) @map("unit_price")
+  totalAmount         Decimal   @db.Decimal(19, 4) @map("total_amount")
+  carrierName         String?   @db.VarChar(200) @map("carrier_name")
+  carrierDocument     String?   @db.VarChar(20) @map("carrier_document")
+  tankerPlate         String?   @db.VarChar(10) @map("tanker_plate")
+  tankerTrailerPlate  String?   @db.VarChar(10) @map("tanker_trailer_plate")
+  tankerDriverName    String?   @db.VarChar(200) @map("tanker_driver_name")
+  tankerDriverDocument String?  @db.VarChar(20) @map("tanker_driver_document")
+  sealNumbers         Json?     @db.JsonB @map("seal_numbers") // array of strings
+  beforeTankLevelLiters Decimal? @db.Decimal(10, 3) @map("before_tank_level_liters")
+  afterTankLevelLiters  Decimal? @db.Decimal(10, 3) @map("after_tank_level_liters")
+  differenceLiters    Decimal?  @db.Decimal(10, 3) @map("difference_liters")
+  differencePercent   Decimal?  @db.Decimal(5, 2) @map("difference_percent")
+  status              String    @db.VarChar(50) @default("SCHEDULED")
+  // scheduled | arrived | unloading | received | under_review | approved | rejected | cancelled
+  receivedByUserId    String?   @db.Uuid @map("received_by_user_id")
+  approvedByUserId    String?   @db.Uuid @map("approved_by_user_id")
+  approvedAt          DateTime? @db.Timestamptz(6) @map("approved_at")
+  notes               String?   @db.Text
+  createdAt           DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt           DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt           DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  branch      Branch                  @relation(fields: [branchId], references: [id])
+  supplier    FuelSupplier            @relation(fields: [supplierId], references: [id])
+  fuelProduct FuelProduct             @relation(fields: [fuelProductId], references: [id])
+  fuelTank    FuelTank                @relation(fields: [fuelTankId], references: [id])
+  evidences   FuelDeliveryEvidence[]
+  incidents   FuelIncident[]
+
+  @@unique([tenantId, supplierId, invoiceNumber])
+  @@index([tenantId, branchId, status])
+  @@index([tenantId, fuelTankId])
+  @@map("fuel_deliveries")
+}
+
+model FuelDeliveryEvidence {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @db.Uuid @map("tenant_id")
+  fuelDeliveryId  String   @db.Uuid @map("fuel_delivery_id")
+  type            String   @db.VarChar(50)
+  // invoice_photo | tanker_photo | seal_photo | tank_gauge_photo | video | document | signature
+  fileUrl         String   @db.Text @map("file_url")
+  metadata        Json?    @db.JsonB
+  uploadedByUserId String  @db.Uuid @map("uploaded_by_user_id")
+  createdAt       DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  fuelDelivery FuelDelivery @relation(fields: [fuelDeliveryId], references: [id])
+
+  @@index([tenantId, fuelDeliveryId])
+  @@map("fuel_delivery_evidences")
+}
+
+// ============================================================
+// FUEL — LIVRO RAZÃO (APPEND-ONLY)
+// ============================================================
+
+model FuelInventoryMovement {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @db.Uuid @map("tenant_id")
+  branchId        String   @db.Uuid @map("branch_id")
+  fuelTankId      String   @db.Uuid @map("fuel_tank_id")
+  fuelProductId   String   @db.Uuid @map("fuel_product_id")
+  movementType    String   @db.VarChar(50) @map("movement_type")
+  // delivery_in | internal_fueling_out | adjustment_in | adjustment_out | loss | transfer_in | transfer_out | correction | audit_difference
+  sourceType      String   @db.VarChar(50) @map("source_type")
+  // delivery | fueling | reconciliation | manual_adjustment | transfer | incident
+  sourceId        String   @db.Uuid @map("source_id")
+  quantityLiters  Decimal  @db.Decimal(10, 3) @map("quantity_liters")
+  unitCost        Decimal? @db.Decimal(19, 4) @map("unit_cost")
+  totalCost       Decimal? @db.Decimal(19, 4) @map("total_cost")
+  stockBefore     Decimal  @db.Decimal(10, 3) @map("stock_before")
+  stockAfter      Decimal  @db.Decimal(10, 3) @map("stock_after")
+  occurredAt      DateTime @db.Timestamptz(6) @map("occurred_at")
+  createdByUserId String   @db.Uuid @map("created_by_user_id")
+  approvedByUserId String? @db.Uuid @map("approved_by_user_id")
+  reason          String?  @db.Text
+  metadata        Json?    @db.JsonB
+  createdAt       DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  // NOTE: NO updatedAt — this table is append-only by design
+
+  branch      Branch      @relation(fields: [branchId], references: [id])
+  fuelTank    FuelTank    @relation(fields: [fuelTankId], references: [id])
+  fuelProduct FuelProduct @relation(fields: [fuelProductId], references: [id])
+
+  @@index([tenantId, fuelTankId, occurredAt(sort: Desc)])
+  @@index([tenantId, sourceType, sourceId])
+  @@index([tenantId, movementType, occurredAt(sort: Desc)])
+  @@map("fuel_inventory_movements")
+}
+
+// ============================================================
+// FUEL — PERFIL DO ABASTECEDOR
+// ============================================================
+
+model FuelAttendantProfile {
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                 String    @db.Uuid @map("tenant_id")
+  userId                   String    @unique @db.Uuid @map("user_id")
+  employeeId               String?   @db.Uuid @map("employee_id")
+  allowedBranchIds         Json      @db.JsonB @map("allowed_branch_ids") // string[]
+  allowedTankIds           Json      @db.JsonB @map("allowed_tank_ids") // string[]
+  allowedPumpIds           Json      @db.JsonB @map("allowed_pump_ids") // string[]
+  shift                    String?   @db.VarChar(30)
+  // morning | afternoon | night | flexible
+  status                   String    @db.VarChar(50) @default("ACTIVE")
+  certificationExpiresAt   DateTime? @db.Timestamptz(6) @map("certification_expires_at")
+  createdAt                DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt                DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+
+  @@index([tenantId, status])
+  @@map("fuel_attendant_profiles")
+}
+
+// ============================================================
+// FUEL — INCIDENTES
+// ============================================================
+
+model FuelIncident {
+  id                        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                  String    @db.Uuid @map("tenant_id")
+  branchId                  String    @db.Uuid @map("branch_id")
+  relatedInternalFuelingId  String?   @db.Uuid @map("related_internal_fueling_id")
+  relatedExternalFuelingId  String?   @db.Uuid @map("related_external_fueling_id")
+  relatedFuelDeliveryId     String?   @db.Uuid @map("related_fuel_delivery_id")
+  vehicleId                 String?   @db.Uuid @map("vehicle_id")
+  fuelTankId                String?   @db.Uuid @map("fuel_tank_id")
+  attendantUserId           String?   @db.Uuid @map("attendant_user_id")
+  severity                  String    @db.VarChar(20) @default("LOW")
+  // low | medium | high | critical
+  type                      String    @db.VarChar(100)
+  description               String    @db.Text
+  status                    String    @db.VarChar(50) @default("OPEN")
+  // open | investigating | resolved | dismissed
+  responsibleUserId         String?   @db.Uuid @map("responsible_user_id")
+  resolution                String?   @db.Text
+  createdAt                 DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt                 DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  resolvedAt                DateTime? @db.Timestamptz(6) @map("resolved_at")
+
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  internalFueling InternalFueling? @relation(fields: [relatedInternalFuelingId], references: [id])
+  externalFueling ExternalFueling? @relation(fields: [relatedExternalFuelingId], references: [id])
+  fuelDelivery    FuelDelivery?    @relation(fields: [relatedFuelDeliveryId], references: [id])
+  fuelTank        FuelTank?        @relation(fields: [fuelTankId], references: [id])
+
+  @@index([tenantId, status, severity, createdAt(sort: Desc)])
+  @@index([tenantId, branchId])
+  @@map("fuel_incidents")
+}
+
+// ============================================================
+// FINANCEIRO — CENTRO DE CUSTO
+// ============================================================
+
+model CostCenter {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @db.Uuid @map("tenant_id")
+  code        String    @db.VarChar(30)
+  name        String    @db.VarChar(100)
+  description String?   @db.Text
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
+  deletedAt   DateTime? @db.Timestamptz(6) @map("deleted_at")
+
+  @@unique([tenantId, code])
+  @@index([tenantId, active])
+  @@map("cost_centers")
+}
+
+// ============================================================
+// READ MODELS / SUMMARIES (materialized by background workers)
+// ============================================================
+
+model FuelDailySummary {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @db.Uuid @map("tenant_id")
+  branchId       String   @db.Uuid @map("branch_id")
+  fuelProductId  String   @db.Uuid @map("fuel_product_id")
+  summaryDate    DateTime @db.Date @map("summary_date")
+  totalLitersIn  Decimal  @db.Decimal(10, 3) @map("total_liters_in")
+  totalLitersOut Decimal  @db.Decimal(10, 3) @map("total_liters_out")
+  totalCostOut   Decimal  @db.Decimal(19, 4) @map("total_cost_out")
+  fuelingCount   Int      @default(0) @map("fueling_count")
+  anomalyCount   Int      @default(0) @map("anomaly_count")
+  createdAt      DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+
+  tenant      Tenant  @relation(fields: [tenantId], references: [id])
+  branch      Branch  @relation(fields: [branchId], references: [id])
+
+  @@unique([tenantId, branchId, fuelProductId, summaryDate])
+  @@index([tenantId, branchId, summaryDate(sort: Desc)])
+  @@map("fuel_daily_summaries")
+}
+
+model TankStockSnapshot {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @db.Uuid @map("tenant_id")
+  tankId         String   @db.Uuid @map("tank_id")
+  snapshotDate   DateTime @db.Date @map("snapshot_date")
+  stockLiters    Decimal  @db.Decimal(10, 3) @map("stock_liters")
+  stockValue     Decimal? @db.Decimal(19, 4) @map("stock_value")
+  capacityLiters Decimal  @db.Decimal(10, 3) @map("capacity_liters")
+  createdAt      DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  tenant Tenant   @relation(fields: [tenantId], references: [id])
+  tank   FuelTank @relation(fields: [tankId], references: [id])
+
+  @@unique([tenantId, tankId, snapshotDate])
+  @@index([tenantId, tankId, snapshotDate(sort: Desc)])
+  @@map("tank_stock_snapshots")
+}
+
+model VehicleFuelEfficiencySummary {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @db.Uuid @map("tenant_id")
+  vehicleId     String   @db.Uuid @map("vehicle_id")
+  fuelProductId String   @db.Uuid @map("fuel_product_id")
+  periodMonth   Int      @map("period_month")
+  periodYear    Int      @map("period_year")
+  totalLiters   Decimal  @db.Decimal(10, 3) @map("total_liters")
+  totalKm       Decimal  @db.Decimal(10, 1) @map("total_km")
+  avgKmPerLiter Decimal  @db.Decimal(10, 3) @map("avg_km_per_liter")
+  totalCost     Decimal  @db.Decimal(19, 4) @map("total_cost")
+  fuelingCount  Int      @default(0) @map("fueling_count")
+  createdAt     DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@unique([tenantId, vehicleId, fuelProductId, periodYear, periodMonth])
+  @@index([tenantId, vehicleId, periodYear, periodMonth])
+  @@map("vehicle_fuel_efficiency_summaries")
+}
+
+model AttendantFuelSummary {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @db.Uuid @map("tenant_id")
+  userId         String   @db.Uuid @map("user_id")
+  periodMonth    Int      @map("period_month")
+  periodYear     Int      @map("period_year")
+  totalFuelings  Int      @default(0) @map("total_fuelings")
+  totalLiters    Decimal  @db.Decimal(10, 3) @map("total_liters")
+  anomalyCount   Int      @default(0) @map("anomaly_count")
+  avgLitersPerOp Decimal  @db.Decimal(10, 3) @map("avg_liters_per_op")
+  createdAt      DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6) @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([tenantId, userId, periodYear, periodMonth])
+  @@index([tenantId, userId, periodYear, periodMonth])
+  @@map("attendant_fuel_summaries")
 }

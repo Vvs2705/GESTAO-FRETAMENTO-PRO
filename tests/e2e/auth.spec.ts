@@ -6,8 +6,9 @@ test.describe("Fluxos de Autenticação", () => {
     await page.goto("/login");
     await expect(page.locator("h1")).toContainText("Gestão Fretamento Pro");
 
-    // 2. Preenche e-mail e envia
+    // 2. Preenche e-mail e senha e envia
     await page.fill('input[type="email"]', "admin@fretamento.com");
+    await page.fill('input[type="password"]', "123456");
     await page.click('button[type="submit"]');
 
     // 3. Deve redirecionar para a home (/executive)
@@ -26,6 +27,7 @@ test.describe("Fluxos de Autenticação", () => {
   test("Deve exibir erro para credenciais inválidas", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[type="email"]', "invalido@fretamento.com");
+    await page.fill('input[type="password"]', "wrong-password");
     await page.click('button[type="submit"]');
 
     // Deve permanecer na página de login e exibir toast de erro

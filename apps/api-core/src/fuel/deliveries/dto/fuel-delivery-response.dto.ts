@@ -1,0 +1,33 @@
+export class FuelDeliveryResponseDto {
+  id!: string;
+  tenantId!: string;
+  branchId!: string;
+  supplierId!: string;
+  fuelProductId!: string;
+  fuelTankId!: string;
+  deliveryDate!: Date;
+  invoiceNumber!: string;
+  invoiceAccessKey?: string | null;
+  contractedLiters!: number;
+  declaredLiters!: number;
+  receivedLiters?: number | null;
+  acceptedLiters?: number | null;
+  rejectedLiters?: number | null;
+  unitPrice!: number;
+  totalAmount!: number;
+  carrierName?: string | null;
+  carrierDocument?: string | null;
+  tankerPlate?: string | null;
+  tankerDriverName?: string | null;
+  beforeTankLevelLiters?: number | null;
+  afterTankLevelLiters?: number | null;
+  differenceLiters?: number | null;
+  differencePercent?: number | null;
+  status!: string;
+  receivedByUserId?: string | null;
+  approvedByUserId?: string | null;
+  approvedAt?: Date | null;
+  notes?: string | null;
+  createdAt!: Date;
+  updatedAt!: Date;
+}

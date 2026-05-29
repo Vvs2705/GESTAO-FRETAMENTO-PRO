@@ -43,7 +43,50 @@ export type Permission =
   | 'occurrence.resolve'
   | 'occurrence.close.critical'
   | 'occurrence.reopen'
-  // Fuel
+  // Fuel — produtos, tanques, bombas
+  | 'fuel.product.read'
+  | 'fuel.product.create'
+  | 'fuel.product.update'
+  | 'fuel.tank.read'
+  | 'fuel.tank.create'
+  | 'fuel.tank.update'
+  | 'fuel.pump.read'
+  | 'fuel.pump.create'
+  | 'fuel.pump.update'
+  | 'fuel.supplier.read'
+  | 'fuel.supplier.create'
+  | 'fuel.supplier.update'
+  | 'fuel.supplier.approve'
+  | 'fuel.station.read'
+  | 'fuel.station.create'
+  | 'fuel.station.approve'
+  // Fuel — abastecimento interno
+  | 'fuel.internal.read'
+  | 'fuel.internal.create'
+  | 'fuel.internal.approve'
+  | 'fuel.internal.reject'
+  | 'fuel.internal.correct'
+  // Fuel — entrega por carreta
+  | 'fuel.delivery.read'
+  | 'fuel.delivery.create'
+  | 'fuel.delivery.approve'
+  | 'fuel.delivery.reject'
+  // Fuel — abastecimento externo
+  | 'fuel.external.read'
+  | 'fuel.external.create'
+  | 'fuel.external.approve'
+  | 'fuel.external.reject'
+  // Fuel — reconciliação e estoque
+  | 'fuel.reconciliation.read'
+  | 'fuel.reconciliation.create'
+  | 'fuel.reconciliation.approve'
+  | 'fuel.stock.read'
+  | 'fuel.stock.adjust'
+  // Fuel — incidentes
+  | 'fuel.incident.read'
+  | 'fuel.incident.create'
+  | 'fuel.incident.resolve'
+  // Fuel — legado (mantido para compatibilidade)
   | 'fuel.read'
   | 'fuel.create'
   | 'fuel.update'
@@ -51,6 +94,13 @@ export type Permission =
   | 'fuel.delete'
   | 'fuel.anomaly.view'
   | 'fuel.export'
+  // Analytics por cargo
+  | 'analytics.executive.read'
+  | 'analytics.fuel.read'
+  | 'analytics.fleet.read'
+  | 'analytics.operations.read'
+  | 'analytics.finance.read'
+  | 'analytics.maintenance.read'
   // Maintenance
   | 'maintenance.read'
   | 'maintenance.create'
@@ -133,6 +183,43 @@ export const ALL_PERMISSIONS: readonly Permission[] = [
   'occurrence.resolve',
   'occurrence.close.critical',
   'occurrence.reopen',
+  'fuel.product.read',
+  'fuel.product.create',
+  'fuel.product.update',
+  'fuel.tank.read',
+  'fuel.tank.create',
+  'fuel.tank.update',
+  'fuel.pump.read',
+  'fuel.pump.create',
+  'fuel.pump.update',
+  'fuel.supplier.read',
+  'fuel.supplier.create',
+  'fuel.supplier.update',
+  'fuel.supplier.approve',
+  'fuel.station.read',
+  'fuel.station.create',
+  'fuel.station.approve',
+  'fuel.internal.read',
+  'fuel.internal.create',
+  'fuel.internal.approve',
+  'fuel.internal.reject',
+  'fuel.internal.correct',
+  'fuel.delivery.read',
+  'fuel.delivery.create',
+  'fuel.delivery.approve',
+  'fuel.delivery.reject',
+  'fuel.external.read',
+  'fuel.external.create',
+  'fuel.external.approve',
+  'fuel.external.reject',
+  'fuel.reconciliation.read',
+  'fuel.reconciliation.create',
+  'fuel.reconciliation.approve',
+  'fuel.stock.read',
+  'fuel.stock.adjust',
+  'fuel.incident.read',
+  'fuel.incident.create',
+  'fuel.incident.resolve',
   'fuel.read',
   'fuel.create',
   'fuel.update',
@@ -140,6 +227,12 @@ export const ALL_PERMISSIONS: readonly Permission[] = [
   'fuel.delete',
   'fuel.anomaly.view',
   'fuel.export',
+  'analytics.executive.read',
+  'analytics.fuel.read',
+  'analytics.fleet.read',
+  'analytics.operations.read',
+  'analytics.finance.read',
+  'analytics.maintenance.read',
   'maintenance.read',
   'maintenance.create',
   'maintenance.update',

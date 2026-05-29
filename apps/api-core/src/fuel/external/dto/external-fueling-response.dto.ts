@@ -1,0 +1,32 @@
+export class ExternalFuelingResponseDto {
+  id!: string;
+  tenantId!: string;
+  branchId?: string | null;
+  vehicleId!: string;
+  driverId!: string;
+  fuelStationId?: string | null;
+  stationNameFree?: string | null;
+  fuelProductId!: string;
+  odometer!: number;
+  liters!: number;
+  unitPrice!: number;
+  totalAmount!: number;
+  paymentMethod!: string;
+  receiptNumber?: string | null;
+  receiptPhotoUrl?: string | null;
+  receiptAccessKey?: string | null;
+  occurredAt!: Date;
+  latitude?: number | null;
+  longitude?: number | null;
+  tripId?: string | null;
+  status!: string;
+  anomalyFlag!: boolean;
+  anomalyReason?: string | null;
+  approvedByUserId?: string | null;
+  approvedAt?: Date | null;
+  notes?: string | null;
+  clientGeneratedId?: string | null;
+  idempotencyKey?: string | null;
+  createdAt!: Date;
+  updatedAt!: Date;
+}

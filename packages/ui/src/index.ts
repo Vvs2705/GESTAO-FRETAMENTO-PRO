@@ -31,3 +31,7 @@ export * from "./components/LineChart";
 export * from "./components/BarChart";
 export * from "./components/RankingChart";
 export * from "./components/KpiTrend";
+export * from "./components/Logo";
+export * from "./components/FuelStockGauge";
+
+

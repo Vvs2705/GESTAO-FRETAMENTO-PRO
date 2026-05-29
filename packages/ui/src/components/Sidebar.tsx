@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "../utils/cn";
+import { Logo } from "./Logo";
 import {
   LayoutDashboard,
   MapPin,
@@ -13,10 +14,10 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
-  Menu,
 } from "lucide-react";
 
 export interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
+
   currentPath: string;
   role: string;
   onNavigate?: (path: string) => void;
@@ -146,10 +147,10 @@ export function Sidebar({ currentPath, role, onNavigate, className, ...props }: 
       {...props}
     >
       <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 h-16">
-        {!collapsed && (
-          <span className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-1.5">
-            <Menu className="w-4.5 h-4.5 text-primary" /> Fretamento Pro
-          </span>
+        {!collapsed ? (
+          <Logo size="sm" variant="horizontal" />
+        ) : (
+          <Logo size="sm" variant="symbol" className="mx-auto" />
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}

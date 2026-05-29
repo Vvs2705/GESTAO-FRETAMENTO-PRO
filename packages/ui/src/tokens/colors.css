@@ -90,59 +90,60 @@
   --color-violet-900: #581c87;
 
   /* Semantics */
-  --color-primary: var(--color-blue-600);
-  --color-primary-foreground: var(--color-slate-50);
-  --color-secondary: var(--color-slate-100);
-  --color-secondary-foreground: var(--color-slate-900);
-  --color-danger: var(--color-red-600);
-  --color-danger-foreground: var(--color-slate-50);
-  --color-success: var(--color-green-600);
-  --color-success-foreground: var(--color-slate-50);
-  --color-warning: var(--color-amber-600);
-  --color-warning-foreground: var(--color-slate-900);
-  --color-info: var(--color-indigo-600);
-  --color-info-foreground: var(--color-slate-50);
+  --color-primary: #1D4ED8; /* Azul comando */
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #102A43; /* Azul petróleo */
+  --color-secondary-foreground: #F8FAFC;
+  --color-danger: #EF4444; /* Vermelho crítico */
+  --color-danger-foreground: #FFFFFF;
+  --color-success: #10B981; /* Verde positivo */
+  --color-success-foreground: #FFFFFF;
+  --color-warning: #F59E0B; /* Âmbar alerta */
+  --color-warning-foreground: #0B1220;
+  --color-info: #06B6D4; /* Ciano operacional */
+  --color-info-foreground: #0B1220;
 
-  --color-background: var(--color-slate-50);
-  --color-foreground: var(--color-slate-900);
-  --color-card: #ffffff;
-  --color-card-foreground: var(--color-slate-900);
-  --color-popover: #ffffff;
-  --color-popover-foreground: var(--color-slate-900);
-  --color-border: var(--color-slate-200);
-  --color-input: var(--color-slate-200);
-  --color-ring: var(--color-blue-500);
+  --color-background: #F8FAFC; /* Fundo claro */
+  --color-foreground: #0B1220; /* Grafite profundo */
+  --color-card: #FFFFFF;
+  --color-card-foreground: #0B1220;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #0B1220;
+  --color-border: #cbd5e1; /* slate-300 */
+  --color-input: #e2e8f0; /* slate-200 */
+  --color-ring: #1D4ED8;
 
-  --color-text-primary: var(--color-slate-900);
-  --color-text-secondary: var(--color-slate-500);
-  --color-text-muted: var(--color-slate-400);
+  --color-text-primary: #0B1220;
+  --color-text-secondary: #64748B; /* Cinza aço */
+  --color-text-muted: #94a3b8;
 }
 
 .dark {
-  --color-primary: var(--color-blue-500);
-  --color-primary-foreground: var(--color-slate-950);
-  --color-secondary: var(--color-slate-800);
-  --color-secondary-foreground: var(--color-slate-50);
-  --color-danger: var(--color-red-500);
-  --color-danger-foreground: var(--color-slate-950);
-  --color-success: var(--color-green-500);
-  --color-success-foreground: var(--color-slate-950);
-  --color-warning: var(--color-amber-500);
-  --color-warning-foreground: var(--color-slate-950);
-  --color-info: var(--color-indigo-400);
-  --color-info-foreground: var(--color-slate-950);
+  --color-primary: #3B82F6;
+  --color-primary-foreground: #0B1220;
+  --color-secondary: #102A43;
+  --color-secondary-foreground: #F8FAFC;
+  --color-danger: #EF4444;
+  --color-danger-foreground: #FFFFFF;
+  --color-success: #10B981;
+  --color-success-foreground: #0B1220;
+  --color-warning: #F59E0B;
+  --color-warning-foreground: #0B1220;
+  --color-info: #06B6D4;
+  --color-info-foreground: #0B1220;
 
-  --color-background: var(--color-slate-950);
-  --color-foreground: var(--color-slate-50);
-  --color-card: var(--color-slate-900);
-  --color-card-foreground: var(--color-slate-50);
-  --color-popover: var(--color-slate-900);
-  --color-popover-foreground: var(--color-slate-50);
-  --color-border: var(--color-slate-800);
-  --color-input: var(--color-slate-800);
-  --color-ring: var(--color-blue-400);
+  --color-background: #0B1220; /* Grafite profundo */
+  --color-foreground: #F8FAFC; /* Branco técnico */
+  --color-card: #102A43; /* Azul petróleo */
+  --color-card-foreground: #F8FAFC;
+  --color-popover: #102A43;
+  --color-popover-foreground: #F8FAFC;
+  --color-border: #1e293b;
+  --color-input: #1e293b;
+  --color-ring: #06B6D4;
 
-  --color-text-primary: var(--color-slate-50);
-  --color-text-secondary: var(--color-slate-400);
-  --color-text-muted: var(--color-slate-600);
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #475569;
 }
+

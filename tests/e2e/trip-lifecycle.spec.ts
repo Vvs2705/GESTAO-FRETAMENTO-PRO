@@ -5,6 +5,7 @@ test.describe("Ciclo de Vida de Viagem", () => {
     // Realiza login antes de cada teste
     await page.goto("/login");
     await page.fill('input[type="email"]', "admin@fretamento.com");
+    await page.fill('input[type="password"]', "123456");
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL("/executive");
   });

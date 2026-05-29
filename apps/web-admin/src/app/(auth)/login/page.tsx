@@ -2,26 +2,30 @@
 
 import * as React from "react";
 import { useAuth } from "../../../lib/auth-context";
-import { FormField, TextInput, SelectField, toast, Spinner } from "@gestao-fretamento-pro/ui";
+import { FormField, TextInput, toast, Spinner } from "@gestao-fretamento-pro/ui";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [email, setEmail] = React.useState("admin@fretamento.com");
-  const [role, setRole] = React.useState<any>("admin");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      toast.error("Campo obrigatório", "Insira um e-mail válido.");
+    if (!email || !password) {
+      toast.error("Campos obrigatórios", "Informe e-mail e senha.");
       return;
     }
     setLoading(true);
     try {
-      await login(email, role);
+      await login(email, password);
       window.location.href = "/";
-    } catch (_) {
-      toast.error("Falha na autenticação", "Verifique suas credenciais.");
+    } catch (err) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "Verifique suas credenciais.";
+      toast.error("Falha na autenticação", message);
     } finally {
       setLoading(false);
     }
@@ -41,22 +45,16 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="exemplo@fretamento.com"
+              placeholder="seu.email@empresa.com"
             />
           </FormField>
 
-          <FormField label="Cargo / Simulação" htmlFor="role">
-            <SelectField
-              value={role}
-              onChange={(e: any) => setRole(e.target.value)}
-              options={[
-                { value: "admin", label: "Administrador" },
-                { value: "ceo", label: "Diretor / CEO" },
-                { value: "operator", label: "Operador de Central" },
-                { value: "supervisor", label: "Supervisor de Frota" },
-                { value: "driver", label: "Motorista" },
-                { value: "finance", label: "Financeiro" },
-              ]}
+          <FormField label="Senha" htmlFor="password" required>
+            <TextInput
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
             />
           </FormField>
 

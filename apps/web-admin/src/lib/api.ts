@@ -14,7 +14,7 @@ export class ApiError extends Error {
   }
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.gestaofretamento.local/v1";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/v1";
 
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];

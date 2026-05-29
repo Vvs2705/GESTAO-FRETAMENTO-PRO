@@ -3,6 +3,7 @@ import './tracing';
 
 import { NestFactory } from '@nestjs/core';
 import { VersioningType } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
@@ -15,7 +16,9 @@ async function bootstrap(): Promise<void> {
     bufferLogs: true,
   });
 
-  const config = app.get<Env>('CONFIG');
+  // ConfigService<Env, true>: env já validado pelo Zod no AppModule (get() não retorna undefined)
+  const config = app.get(ConfigService<Env, true>);
+  const nodeEnv = config.get('NODE_ENV', { infer: true });
 
   // Security headers
   app.use(
@@ -30,7 +33,7 @@ async function bootstrap(): Promise<void> {
   );
 
   // CORS
-  const corsOrigins = (config.CORS_ORIGINS ?? '')
+  const corsOrigins = (config.get('CORS_ORIGINS', { infer: true }) ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
@@ -46,9 +49,9 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
-  // API versioning — /v1/...
+  // API versioning — /v1/... (o versionamento URI já prefixa "/v1";
+  // NÃO usar setGlobalPrefix('v1') junto, senão gera caminho duplo "/v1/v1/...")
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
-  app.setGlobalPrefix('v1');
 
   // Global exception filter
   app.useGlobalFilters(new GlobalExceptionFilter());
@@ -57,7 +60,7 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
 
   // OpenAPI documentation (disabled in production)
-  if (config.NODE_ENV !== 'production') {
+  if (nodeEnv !== 'production') {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Gestão Fretamento Pro API')
       .setDescription('API REST para gestão de fretamento empresarial')
@@ -87,11 +90,13 @@ async function bootstrap(): Promise<void> {
     });
   }
 
-  const port = config.PORT ?? 3000;
-  await app.listen(port);
+  const port = config.get('PORT', { infer: true }) ?? 3000;
+  // Bind em '::' (dual-stack IPv6+IPv4) — o proxy do Fly.io conecta via rede IPv6 interna.
+  // Escutar só em 0.0.0.0 (IPv4) faz o proxy não alcançar o container.
+  await app.listen(port, '::');
 
   console.log(`API running on port ${port}`);
-  if (config.NODE_ENV !== 'production') {
+  if (nodeEnv !== 'production') {
     console.log(`Swagger docs: http://localhost:${port}/docs`);
   }
 }

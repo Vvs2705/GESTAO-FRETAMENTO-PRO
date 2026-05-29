@@ -4,7 +4,7 @@
 # Contexto de build = raiz do monorepo (onde este arquivo está)
 # ============================================================
 app = "gfp-api-core"
-primary_region = "gru"  # São Paulo, Brasil
+primary_region = "iad"  # Virginia (EUA) — co-localizado com o Neon (us-east-1)
 
 [build]
   dockerfile = "infra/docker/api-core/Dockerfile"

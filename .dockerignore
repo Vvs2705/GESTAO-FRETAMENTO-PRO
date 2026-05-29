@@ -1,0 +1,19 @@
+# Reduz o contexto de build enviado ao Docker/Fly (build mais rápido e leve)
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/storybook-static
+**/test-results
+**/playwright-report
+.git
+.github
+**/*.tsbuildinfo
+**/*.log
+.env
+.env.*
+!.env.example
+infra/terraform
+docs
+*.md

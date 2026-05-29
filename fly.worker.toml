@@ -1,0 +1,23 @@
+# ============================================================
+# Fly.io — worker (Gestão Fretamento Pro)
+# Deploy:  flyctl deploy -c fly.worker.toml
+# Worker interno (BullMQ/Outbox) — sem serviço HTTP público.
+# Contexto de build = raiz do monorepo (onde este arquivo está)
+# ============================================================
+app = "gfp-worker"
+primary_region = "gru"  # São Paulo, Brasil
+
+[build]
+  dockerfile = "infra/docker/worker/Dockerfile"
+
+[env]
+  WORKER_PORT = "3001"
+  NODE_ENV = "production"
+  OTEL_SERVICE_NAME = "worker"
+
+# Sem [http_service]: o worker não é exposto publicamente.
+# Mantém 1 máquina sempre ativa para o cron do Outbox (poll a cada 5s).
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

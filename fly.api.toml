@@ -1,0 +1,35 @@
+# ============================================================
+# Fly.io — api-core (Gestão Fretamento Pro)
+# Deploy:  flyctl deploy -c fly.api.toml
+# Contexto de build = raiz do monorepo (onde este arquivo está)
+# ============================================================
+app = "gfp-api-core"
+primary_region = "gru"  # São Paulo, Brasil
+
+[build]
+  dockerfile = "infra/docker/api-core/Dockerfile"
+
+[env]
+  PORT = "3000"
+  NODE_ENV = "production"
+  OTEL_SERVICE_NAME = "api-core"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+    method = "GET"
+    path = "/v1/health"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

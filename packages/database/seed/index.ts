@@ -19,7 +19,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import * as crypto from 'crypto';
+import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient({
   log: ['warn', 'error'],
@@ -52,13 +52,19 @@ function daysFromNow(days: number): Date {
 }
 
 /**
- * Simple password hash using SHA-256 + salt.
- * NOTE: In production use Argon2id (packages/auth).
- * This seed uses Node's built-in crypto to avoid extra deps during bootstrap.
+ * Hash de senha com Argon2id — IDÊNTICO ao backend (packages/auth/password.ts).
+ * Parâmetros conforme docs/08-seguranca-lgpd-governanca.md:
+ *   memoryCost=65536 (64MB), timeCost=3, parallelism=4.
+ * Garante que usuários criados pelo seed conseguem autenticar via /v1/auth/login
+ * (o backend valida com argon2.verify — um hash SHA-256 jamais passaria).
  */
-function hashPassword(plain: string): string {
-  const salt = 'gfp-seed-salt-2026';
-  return crypto.createHmac('sha256', salt).update(plain).digest('hex');
+async function hashPassword(plain: string): Promise<string> {
+  return argon2.hash(plain, {
+    type: argon2.argon2id,
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 4,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -158,35 +164,97 @@ async function main(): Promise<void> {
   console.log('Filiais criadas: São Paulo, Campinas');
 
   // ─── Permissions ──────────────────────────────────────────────────────────
+  // Catálogo COMPLETO — sincronizado com packages/types/src/permissions.types.ts
+  // e com todos os @RequirePermission() usados nos controllers do api-core.
+  // Toda permissão referenciada no código DEVE existir aqui, senão o PermissionGuard
+  // nega o acesso a TODOS os usuários (inclusive CEO) para aquele endpoint.
   const permissionDefs = [
+    // Veículos
     { key: 'vehicle.read', module: 'vehicle', action: 'read', description: 'Visualizar veículos' },
     { key: 'vehicle.create', module: 'vehicle', action: 'create', description: 'Cadastrar veículos' },
     { key: 'vehicle.update', module: 'vehicle', action: 'update', description: 'Atualizar veículos' },
     { key: 'vehicle.delete', module: 'vehicle', action: 'delete', description: 'Remover veículos' },
+    { key: 'vehicle.assign', module: 'vehicle', action: 'assign', description: 'Alocar veículos a viagens' },
+    // Viagens
     { key: 'trip.read', module: 'trip', action: 'read', description: 'Visualizar viagens' },
     { key: 'trip.create', module: 'trip', action: 'create', description: 'Criar viagens' },
     { key: 'trip.update', module: 'trip', action: 'update', description: 'Atualizar viagens' },
     { key: 'trip.cancel', module: 'trip', action: 'cancel', description: 'Cancelar viagens' },
+    { key: 'trip.start', module: 'trip', action: 'start', description: 'Iniciar viagens' },
+    { key: 'trip.complete', module: 'trip', action: 'complete', description: 'Concluir viagens' },
+    { key: 'trip.export', module: 'trip', action: 'export', description: 'Exportar viagens' },
+    // Abastecimento
     { key: 'fuel.read', module: 'fuel', action: 'read', description: 'Visualizar abastecimentos' },
     { key: 'fuel.create', module: 'fuel', action: 'create', description: 'Registrar abastecimentos' },
+    { key: 'fuel.update', module: 'fuel', action: 'update', description: 'Editar abastecimentos' },
+    { key: 'fuel.delete', module: 'fuel', action: 'delete', description: 'Remover abastecimentos' },
     { key: 'fuel.approve', module: 'fuel', action: 'approve', description: 'Aprovar abastecimentos' },
+    { key: 'fuel.export', module: 'fuel', action: 'export', description: 'Exportar abastecimentos' },
+    // Motoristas
     { key: 'driver.read', module: 'driver', action: 'read', description: 'Visualizar motoristas' },
     { key: 'driver.create', module: 'driver', action: 'create', description: 'Cadastrar motoristas' },
     { key: 'driver.update', module: 'driver', action: 'update', description: 'Atualizar motoristas' },
+    { key: 'driver.delete', module: 'driver', action: 'delete', description: 'Remover motoristas' },
+    // Manutenção
     { key: 'maintenance.read', module: 'maintenance', action: 'read', description: 'Visualizar manutenções' },
     { key: 'maintenance.create', module: 'maintenance', action: 'create', description: 'Criar ordens de manutenção' },
+    { key: 'maintenance.update', module: 'maintenance', action: 'update', description: 'Atualizar ordens de manutenção' },
+    { key: 'maintenance.complete', module: 'maintenance', action: 'complete', description: 'Concluir ordens de manutenção' },
+    // Ocorrências
     { key: 'occurrence.read', module: 'occurrence', action: 'read', description: 'Visualizar ocorrências' },
     { key: 'occurrence.create', module: 'occurrence', action: 'create', description: 'Registrar ocorrências' },
+    { key: 'occurrence.update', module: 'occurrence', action: 'update', description: 'Atualizar ocorrências' },
+    { key: 'occurrence.resolve', module: 'occurrence', action: 'resolve', description: 'Resolver ocorrências' },
+    { key: 'occurrence.reopen', module: 'occurrence', action: 'reopen', description: 'Reabrir ocorrências' },
+    // Financeiro
     { key: 'finance.read', module: 'finance', action: 'read', description: 'Visualizar financeiro' },
-    { key: 'finance.write', module: 'finance', action: 'write', description: 'Editar financeiro' },
-    { key: 'audit.read', module: 'audit', action: 'read', description: 'Visualizar auditoria' },
-    { key: 'permission.manage', module: 'permission', action: 'manage', description: 'Gerenciar permissões e cargos' },
+    { key: 'finance.create', module: 'finance', action: 'create', description: 'Lançar financeiro' },
+    { key: 'finance.update', module: 'finance', action: 'update', description: 'Editar financeiro' },
+    { key: 'finance.export', module: 'finance', action: 'export', description: 'Exportar financeiro' },
+    // Clientes
     { key: 'client.read', module: 'client', action: 'read', description: 'Visualizar clientes' },
     { key: 'client.create', module: 'client', action: 'create', description: 'Cadastrar clientes' },
+    { key: 'client.update', module: 'client', action: 'update', description: 'Atualizar clientes' },
+    { key: 'client.delete', module: 'client', action: 'delete', description: 'Remover clientes' },
+    // Rotas
+    { key: 'route.read', module: 'route', action: 'read', description: 'Visualizar rotas' },
+    { key: 'route.create', module: 'route', action: 'create', description: 'Cadastrar rotas' },
+    { key: 'route.update', module: 'route', action: 'update', description: 'Atualizar rotas' },
+    { key: 'route.delete', module: 'route', action: 'delete', description: 'Remover rotas' },
+    // Documentos
     { key: 'document.read', module: 'document', action: 'read', description: 'Visualizar documentos' },
-    { key: 'document.upload', module: 'document', action: 'upload', description: 'Enviar documentos' },
+    { key: 'document.create', module: 'document', action: 'create', description: 'Enviar documentos' },
+    { key: 'document.delete', module: 'document', action: 'delete', description: 'Remover documentos' },
+    // Tenant / Filiais
+    { key: 'tenant.read', module: 'tenant', action: 'read', description: 'Visualizar dados da empresa' },
+    { key: 'tenant.update', module: 'tenant', action: 'update', description: 'Atualizar dados da empresa' },
+    { key: 'branch.read', module: 'branch', action: 'read', description: 'Visualizar filiais' },
+    { key: 'branch.create', module: 'branch', action: 'create', description: 'Cadastrar filiais' },
+    { key: 'branch.update', module: 'branch', action: 'update', description: 'Atualizar filiais' },
+    // Usuários
+    { key: 'user.read', module: 'user', action: 'read', description: 'Visualizar usuários' },
+    { key: 'user.create', module: 'user', action: 'create', description: 'Cadastrar usuários' },
+    { key: 'user.update', module: 'user', action: 'update', description: 'Atualizar usuários' },
+    { key: 'user.delete', module: 'user', action: 'delete', description: 'Remover usuários' },
+    // Cargos / Permissões
+    { key: 'role.read', module: 'role', action: 'read', description: 'Visualizar cargos' },
+    { key: 'role.create', module: 'role', action: 'create', description: 'Criar cargos' },
+    { key: 'role.update', module: 'role', action: 'update', description: 'Atualizar cargos' },
+    { key: 'role.delete', module: 'role', action: 'delete', description: 'Remover cargos' },
+    { key: 'role.manage', module: 'role', action: 'manage', description: 'Gerenciar cargos' },
+    { key: 'permission.manage', module: 'permission', action: 'manage', description: 'Gerenciar permissões' },
+    // Auditoria
+    { key: 'audit.read', module: 'audit', action: 'read', description: 'Visualizar auditoria' },
+    { key: 'audit.export', module: 'audit', action: 'export', description: 'Exportar auditoria' },
+    // Notificações
     { key: 'notification.read', module: 'notification', action: 'read', description: 'Visualizar notificações' },
-    { key: 'dashboard.executive', module: 'dashboard', action: 'executive', description: 'Acesso ao dashboard executivo' },
+    // Dashboards
+    { key: 'dashboard.executive', module: 'dashboard', action: 'executive', description: 'Dashboard executivo' },
+    { key: 'dashboard.operation', module: 'dashboard', action: 'operation', description: 'Dashboard operacional' },
+    { key: 'dashboard.fleet', module: 'dashboard', action: 'fleet', description: 'Dashboard de frota' },
+    { key: 'dashboard.fuel', module: 'dashboard', action: 'fuel', description: 'Dashboard de combustível' },
+    // Relatórios
+    { key: 'report.export', module: 'report', action: 'export', description: 'Exportar relatórios' },
   ];
 
   const permissions = await Promise.all(
@@ -224,10 +292,12 @@ async function main(): Promise<void> {
         'fuel.read', 'fuel.create', 'fuel.approve',
         'driver.read', 'driver.create', 'driver.update',
         'maintenance.read', 'maintenance.create',
-        'occurrence.read', 'occurrence.create',
-        'client.read', 'client.create',
-        'document.read', 'document.upload',
-        'notification.read', 'dashboard.executive',
+        'occurrence.read', 'occurrence.create', 'occurrence.resolve',
+        'client.read', 'client.create', 'client.update',
+        'route.read', 'route.create', 'route.update',
+        'document.read', 'document.create',
+        'notification.read',
+        'dashboard.executive', 'dashboard.operation', 'dashboard.fleet', 'dashboard.fuel',
       ],
     },
     {
@@ -273,10 +343,11 @@ async function main(): Promise<void> {
         'fuel.read', 'fuel.approve',
         'maintenance.read',
         'client.read',
-        'finance.read', 'finance.write',
+        'finance.read', 'finance.create', 'finance.update', 'finance.export',
         'audit.read',
         'document.read',
-        'dashboard.executive',
+        'dashboard.executive', 'dashboard.fuel',
+        'report.export',
         'notification.read',
       ],
     },
@@ -435,42 +506,139 @@ async function main(): Promise<void> {
   console.log(`${employees.length} funcionários e ${drivers.length} motoristas criados`);
 
   // ─── Users ─────────────────────────────────────────────────────────────────
-  const userAdmin = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: tenant.id, email: 'admin@alfafretamento.com.br' } },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      name: 'Administrador Alfa',
-      email: 'admin@alfafretamento.com.br',
-      passwordHash: hashPassword('Admin@2026!'),
-      status: 'ACTIVE',
-    },
-  });
+  // IMPORTANTE: o backend resolve permissões via User → Employee → Role → RolePermissions.
+  // Portanto TODO usuário precisa de um employee vinculado a um cargo, senão fica sem
+  // nenhuma permissão (user.employee?.role = null → permissions = []).
+  //
+  // Helper: cria (ou atualiza) um usuário já vinculado a um employee com o cargo informado.
+  async function upsertUserWithRole(params: {
+    name: string;
+    email: string;
+    password: string;
+    roleName: string;
+    branchId: string;
+    department: string;
+  }): Promise<{ id: string; email: string }> {
+    const roleId = roles[params.roleName];
+    if (!roleId) {
+      throw new Error(`Cargo "${params.roleName}" não encontrado ao criar usuário ${params.email}`);
+    }
 
-  const userOperador = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: tenant.id, email: 'operador@alfafretamento.com.br' } },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      name: 'Operador Principal',
-      email: 'operador@alfafretamento.com.br',
-      passwordHash: hashPassword('Operador@2026!'),
-      status: 'ACTIVE',
-    },
-  });
+    const existing = await prisma.user.findUnique({
+      where: { tenantId_email: { tenantId: tenant.id, email: params.email } },
+    });
+    if (existing) {
+      // Mantém idempotência — atualiza a senha/cargo para refletir o estado desejado.
+      const employeeId =
+        existing.employeeId ??
+        (
+          await prisma.employee.create({
+            data: {
+              tenantId: tenant.id,
+              branchId: params.branchId,
+              roleId,
+              name: params.name,
+              email: params.email,
+              department: params.department,
+              status: 'ACTIVE',
+            },
+          })
+        ).id;
+      const updated = await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          name: params.name,
+          passwordHash: await hashPassword(params.password),
+          status: 'ACTIVE',
+          employeeId,
+        },
+      });
+      if (existing.employeeId) {
+        await prisma.employee.update({ where: { id: existing.employeeId }, data: { roleId } });
+      }
+      return { id: updated.id, email: updated.email };
+    }
 
-  const userFinanceiro = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: tenant.id, email: 'financeiro@alfafretamento.com.br' } },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      name: 'Ana Financeira',
-      email: 'financeiro@alfafretamento.com.br',
-      passwordHash: hashPassword('Financeiro@2026!'),
-      status: 'ACTIVE',
-    },
+    const employee = await prisma.employee.create({
+      data: {
+        tenantId: tenant.id,
+        branchId: params.branchId,
+        roleId,
+        name: params.name,
+        email: params.email,
+        department: params.department,
+        status: 'ACTIVE',
+      },
+    });
+    const user = await prisma.user.create({
+      data: {
+        tenantId: tenant.id,
+        employeeId: employee.id,
+        name: params.name,
+        email: params.email,
+        passwordHash: await hashPassword(params.password),
+        status: 'ACTIVE',
+      },
+    });
+    return { id: user.id, email: user.email };
+  }
+
+  // ─── ADMIN GERAL DO SISTEMA (via variáveis de ambiente) ─────────────────────
+  // Perfil administrador com acesso TOTAL (cargo CEO = todas as 69 permissões),
+  // usado para validar funcionalidades reais nos servidores.
+  // Credenciais NUNCA ficam em código — vêm de ADMIN_EMAIL / ADMIN_PASSWORD.
+  const adminEmail = process.env['ADMIN_EMAIL'];
+  const adminPassword = process.env['ADMIN_PASSWORD'];
+  const adminName = process.env['ADMIN_NAME'] ?? 'Administrador Geral';
+
+  if (!adminEmail || !adminPassword) {
+    throw new Error(
+      'ADMIN_EMAIL e ADMIN_PASSWORD são obrigatórios para o seed. ' +
+        'Defina-os no .env (local) ou nas variáveis de ambiente do servidor.',
+    );
+  }
+  if (adminPassword.length < 8) {
+    throw new Error('ADMIN_PASSWORD deve ter pelo menos 8 caracteres.');
+  }
+
+  const userAdminGeral = await upsertUserWithRole({
+    name: adminName,
+    email: adminEmail,
+    password: adminPassword,
+    roleName: 'CEO',
+    branchId: branchSP.id,
+    department: 'Diretoria',
   });
-  console.log(`3 usuários criados: ${userAdmin.email}, ${userOperador.email}, ${userFinanceiro.email}`);
+  console.log(`Admin geral configurado: ${userAdminGeral.email} (cargo CEO — acesso total)`);
+
+  // ─── Usuários de demonstração (dados de apresentação) ───────────────────────
+  // Senhas demo vêm de env opcional; default seguro apenas para ambiente local.
+  const demoPassword = process.env['DEMO_USER_PASSWORD'] ?? 'Demo@2026!Alfa';
+  const userAdmin = await upsertUserWithRole({
+    name: 'Administrador Alfa',
+    email: 'admin@alfafretamento.com.br',
+    password: demoPassword,
+    roleName: 'CEO',
+    branchId: branchSP.id,
+    department: 'Diretoria',
+  });
+  const userOperador = await upsertUserWithRole({
+    name: 'Operador Principal',
+    email: 'operador@alfafretamento.com.br',
+    password: demoPassword,
+    roleName: 'Operador',
+    branchId: branchSP.id,
+    department: 'Operações',
+  });
+  const userFinanceiro = await upsertUserWithRole({
+    name: 'Ana Financeira',
+    email: 'financeiro@alfafretamento.com.br',
+    password: demoPassword,
+    roleName: 'Financeiro',
+    branchId: branchSP.id,
+    department: 'Financeiro',
+  });
+  console.log(`3 usuários de demo criados: ${userAdmin.email}, ${userOperador.email}, ${userFinanceiro.email}`);
 
   // ─── Clients ──────────────────────────────────────────────────────────────
   const clientRecords: string[] = [];

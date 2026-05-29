@@ -98,6 +98,21 @@ export const EnvSchema = z.object({
     .string()
     .url({ message: 'S3_ENDPOINT must be a valid URL' })
     .optional(),
+
+  // ──────────────────────────────────────────────
+  // Admin bootstrap (usado APENAS pelo seed — nunca pelo runtime da API)
+  // Define o administrador geral criado ao popular o banco.
+  // Mantidos opcionais para não exigir presença no boot da API.
+  // ──────────────────────────────────────────────
+  ADMIN_EMAIL: z
+    .string()
+    .email({ message: 'ADMIN_EMAIL must be a valid e-mail address' })
+    .optional(),
+  ADMIN_PASSWORD: z
+    .string()
+    .min(8, { message: 'ADMIN_PASSWORD must be at least 8 characters long' })
+    .optional(),
+  ADMIN_NAME: z.string().optional(),
 });
 
 /** Inferred TypeScript type from EnvSchema. Use this everywhere instead of process.env directly. */

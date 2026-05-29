@@ -370,13 +370,22 @@ importers:
       '@prisma/client':
         specifier: ^5.15.0
         version: 5.22.0(prisma@5.22.0)
+      argon2:
+        specifier: ^0.40.3
+        version: 0.40.3
     devDependencies:
       '@gestao-fretamento-pro/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
       prisma:
         specifier: ^5.15.0
         version: 5.22.0
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@types/node@22.19.19)(typescript@5.9.3)
       typescript:
         specifier: ^5.4.0
         version: 5.9.3

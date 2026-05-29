@@ -10,15 +10,19 @@
     "db:migrate:deploy": "prisma migrate deploy --schema=schema/schema.prisma",
     "db:validate": "prisma validate --schema=schema/schema.prisma",
     "db:studio": "prisma studio --schema=schema/schema.prisma",
+    "db:seed": "ts-node --transpile-only seed/index.ts",
     "build": "prisma generate --schema=schema/schema.prisma && tsc",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@prisma/client": "^5.15.0"
+    "@prisma/client": "^5.15.0",
+    "argon2": "^0.40.3"
   },
   "devDependencies": {
     "@gestao-fretamento-pro/tsconfig": "workspace:*",
+    "@types/node": "^22.0.0",
     "prisma": "^5.15.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.4.0"
   }
 }

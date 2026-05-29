@@ -16,8 +16,7 @@ import {
 } from '@nestjs/swagger';
 import { TenantsService } from './tenants.service';
 import { UpdateTenantSchema } from './dto/update-tenant.dto';
-import { CreateBranchSchema } from './dto/create-branch.dto';
-import type { CreateBranchDto } from './dto/create-branch.dto';
+import { CreateBranchSchema, type CreateBranchDto } from './dto/create-branch.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { TenantGuard } from '../common/guards/tenant.guard';
 import { PermissionGuard } from '../common/guards/permission.guard';

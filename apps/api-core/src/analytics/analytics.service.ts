@@ -457,7 +457,7 @@ export class AnalyticsService {
         status: o.status,
         description:
           o.description.length > 100
-            ? o.description.substring(0, 100) + '...'
+            ? `${o.description.substring(0, 100)  }...`
             : o.description,
         createdAt: o.createdAt,
         vehicleId: o.vehicleId,
@@ -599,7 +599,7 @@ export class AnalyticsService {
         type: o.type,
         description:
           o.description.length > 100
-            ? o.description.substring(0, 100) + '...'
+            ? `${o.description.substring(0, 100)  }...`
             : o.description,
         status: o.status,
         expectedEndAt: o.expectedEndAt,

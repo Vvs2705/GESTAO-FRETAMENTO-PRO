@@ -9,8 +9,11 @@ import type { CursorPage } from '@gestao-fretamento-pro/types';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../common/services/audit.service';
 import type { CreateUserDto } from './dto/create-user.dto';
-import { toUserResponse } from './dto/user-response.dto';
-import type { UserResponseDto, UserWithPermissionsDto } from './dto/user-response.dto';
+import {
+  toUserResponse,
+  type UserResponseDto,
+  type UserWithPermissionsDto,
+} from './dto/user-response.dto';
 
 export interface UserListFilters {
   limit?: number;

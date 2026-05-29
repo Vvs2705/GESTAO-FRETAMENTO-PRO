@@ -5,8 +5,7 @@ import {
   type CallHandler,
   Logger,
 } from '@nestjs/common';
-import type { Observable } from 'rxjs';
-import { tap, of } from 'rxjs';
+import { tap, of, type Observable } from 'rxjs';
 import { RedisService } from '../../redis/redis.service';
 import type { Request } from 'express';
 
@@ -52,19 +51,28 @@ export class IdempotencyInterceptor implements NestInterceptor {
     }
 
     return next.handle().pipe(
-      tap(async (body) => {
-        try {
-          await this.redis.set(
-            redisKey,
-            JSON.stringify(body),
-            'EX',
-            IDEMPOTENCY_TTL_SECONDS,
-          );
-        } catch (err) {
-          // Cache write failure must not fail the response
-          this.logger.error({ err, key }, 'Failed to cache idempotency response');
-        }
+      tap((body) => {
+        // Fire-and-forget: a escrita no cache não deve bloquear nem falhar a resposta
+        void this.cacheResponse(redisKey, body, key);
       }),
     );
+  }
+
+  private async cacheResponse(
+    redisKey: string,
+    body: unknown,
+    key: string,
+  ): Promise<void> {
+    try {
+      await this.redis.set(
+        redisKey,
+        JSON.stringify(body),
+        'EX',
+        IDEMPOTENCY_TTL_SECONDS,
+      );
+    } catch (err) {
+      // Cache write failure must not fail the response
+      this.logger.error({ err, key }, 'Failed to cache idempotency response');
+    }
   }
 }

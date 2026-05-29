@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@gestao-fretamento-pro/ui": "workspace:*",
@@ -26,6 +27,8 @@
   "devDependencies": {
     "@next/bundle-analyzer": "^14.2.3",
     "@types/node": "^20.12.12",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.3",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",

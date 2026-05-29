@@ -31,14 +31,15 @@ const sdk = new NodeSDK({
 
 sdk.start();
 
-process.on('SIGTERM', async () => {
-  try {
-    await sdk.shutdown();
-  } catch (err) {
-    console.error('Error shutting down OpenTelemetry SDK', err);
-  } finally {
-    process.exit(0);
-  }
+process.on('SIGTERM', () => {
+  void sdk
+    .shutdown()
+    .catch((err) => {
+      console.error('Error shutting down OpenTelemetry SDK', err);
+    })
+    .finally(() => {
+      process.exit(0);
+    });
 });
 
 export { sdk };

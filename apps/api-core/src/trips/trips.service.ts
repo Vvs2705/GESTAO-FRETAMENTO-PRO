@@ -569,7 +569,7 @@ export class TripsService {
     tripId: string,
     tenantId: string,
     dto: AddPassengerDto,
-    actorId: string,
+    _actorId: string,
   ): Promise<TripPassengerResponseDto> {
     const trip = await this.prisma.trip.findFirst({
       where: { id: tripId, tenantId, deletedAt: null },

@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
-import { OutboxProcessor } from './outbox.processor';
-import { QUEUES } from './outbox.processor';
+import { OutboxProcessor, QUEUES } from './outbox.processor';
 
 @Module({
   imports: [

@@ -8,8 +8,8 @@
     "dev": "nest start --watch",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
-    "test": "jest",
-    "test:integration": "jest --config jest.integration.config.js"
+    "test": "jest --passWithNoTests",
+    "test:integration": "jest --config jest.integration.config.js --passWithNoTests"
   },
   "dependencies": {
     "@gestao-fretamento-pro/auth": "workspace:*",

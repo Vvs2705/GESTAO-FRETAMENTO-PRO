@@ -12,9 +12,15 @@ const sdk = new NodeSDK({
 
 sdk.start();
 
-process.on('SIGTERM', async () => {
-  await sdk.shutdown().catch(() => {});
-  process.exit(0);
+process.on('SIGTERM', () => {
+  void sdk
+    .shutdown()
+    .catch(() => {
+      // Ignora erros de shutdown durante o encerramento
+    })
+    .finally(() => {
+      process.exit(0);
+    });
 });
 
 export { sdk };

@@ -56,11 +56,15 @@ model Tenant {
   occurrences       Occurrence[]
   fuelRecords       FuelRecord[]
   maintenanceOrders MaintenanceOrder[]
-  documents         Document[]
-  notifications     Notification[]
-  auditLogs         AuditLog[]
-  outboxEvents      OutboxEvent[]
-  idempotencyKeys   IdempotencyKey[]
+  documents                      Document[]
+  notifications                  Notification[]
+  auditLogs                      AuditLog[]
+  outboxEvents                   OutboxEvent[]
+  idempotencyKeys                IdempotencyKey[]
+  fuelDailySummaries             FuelDailySummary[]
+  tankStockSnapshots             TankStockSnapshot[]
+  vehicleFuelEfficiencySummaries VehicleFuelEfficiencySummary[]
+  attendantFuelSummaries         AttendantFuelSummary[]
 
   @@map("tenants")
 }
@@ -91,9 +95,10 @@ model Branch {
   fuelPumps           FuelPump[]
   internalFuelings    InternalFueling[]
   externalFuelings    ExternalFueling[]
-  fuelDeliveries      FuelDelivery[]
+  fuelDeliveries         FuelDelivery[]
   fuelInventoryMovements FuelInventoryMovement[]
-  fuelIncidents       FuelIncident[]
+  fuelIncidents          FuelIncident[]
+  fuelDailySummaries     FuelDailySummary[]
 
   @@index([tenantId, status])
   @@index([tenantId, type])
@@ -120,10 +125,11 @@ model User {
   updatedAt        DateTime  @updatedAt @db.Timestamptz(6) @map("updated_at")
   deletedAt        DateTime? @db.Timestamptz(6) @map("deleted_at")
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id])
-  employee      Employee?      @relation(fields: [employeeId], references: [id])
-  refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]     @relation("AuditActor")
+  tenant                 Tenant                 @relation(fields: [tenantId], references: [id])
+  employee               Employee?              @relation(fields: [employeeId], references: [id])
+  refreshTokens          RefreshToken[]
+  auditLogs              AuditLog[]             @relation("AuditActor")
+  attendantFuelSummaries AttendantFuelSummary[]
 
   @@unique([tenantId, email])
   @@index([tenantId, status])
@@ -257,16 +263,17 @@ model Vehicle {
   updatedBy       String?   @db.Uuid @map("updated_by")
   deletedAt       DateTime? @db.Timestamptz(6) @map("deleted_at")
 
-  tenant             Tenant              @relation(fields: [tenantId], references: [id])
-  branch             Branch?             @relation(fields: [branchId], references: [id])
-  trips              Trip[]
-  drivers            Driver[]            @relation("DriverVehicle")
-  fuelRecords        FuelRecord[]
-  maintenanceOrders  MaintenanceOrder[]
-  documents          Document[]
-  occurrences        Occurrence[]
-  internalFuelings   InternalFueling[]
-  externalFuelings   ExternalFueling[]
+  tenant                  Tenant                         @relation(fields: [tenantId], references: [id])
+  branch                  Branch?                        @relation(fields: [branchId], references: [id])
+  trips                   Trip[]
+  drivers                 Driver[]                       @relation("DriverVehicle")
+  fuelRecords             FuelRecord[]
+  maintenanceOrders       MaintenanceOrder[]
+  documents               Document[]
+  occurrences             Occurrence[]
+  internalFuelings        InternalFueling[]
+  externalFuelings        ExternalFueling[]
+  fuelEfficiencySummaries VehicleFuelEfficiencySummary[]
 
   @@unique([tenantId, plate])
   @@index([tenantId, status])
@@ -822,6 +829,7 @@ model FuelTank {
   internalFuelings   InternalFueling[]
   inventoryMovements FuelInventoryMovement[]
   incidents          FuelIncident[]
+  tankStockSnapshots TankStockSnapshot[]
 
   @@unique([tenantId, code])
   @@index([tenantId, branchId, status])

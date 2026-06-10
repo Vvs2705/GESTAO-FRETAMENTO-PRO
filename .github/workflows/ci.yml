@@ -80,6 +80,9 @@ jobs:
       - name: Install dependencies (if cache miss)
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        run: pnpm --filter @gestao-fretamento-pro/database db:generate
+
       - name: Run lint
         run: pnpm turbo lint
 
@@ -113,6 +116,9 @@ jobs:
       - name: Install dependencies (if cache miss)
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        run: pnpm --filter @gestao-fretamento-pro/database db:generate
+
       - name: Run type-check
         run: pnpm turbo typecheck
 
@@ -145,6 +151,9 @@ jobs:
 
       - name: Install dependencies (if cache miss)
         run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @gestao-fretamento-pro/database db:generate
 
       - name: Run unit tests
         run: pnpm turbo test

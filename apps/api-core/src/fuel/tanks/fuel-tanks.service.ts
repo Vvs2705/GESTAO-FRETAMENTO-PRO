@@ -24,7 +24,7 @@ export class FuelTanksService {
       },
       orderBy: [{ branchId: 'asc' }, { name: 'asc' }],
     });
-    return tanks.map(this.toDto);
+    return tanks.map((item) => this.toDto(item));
   }
 
   async findById(id: string, tenantId: string): Promise<FuelTankResponseDto> {

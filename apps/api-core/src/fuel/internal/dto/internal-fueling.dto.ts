@@ -1,5 +1,5 @@
 import {
-  IsString, IsNumber, IsOptional, IsPositive, IsDateString, IsBoolean,
+  IsString, IsNumber, IsOptional, IsPositive, IsDateString,
   MaxLength, Min,
 } from 'class-validator';
 

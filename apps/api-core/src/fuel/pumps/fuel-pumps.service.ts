@@ -20,7 +20,7 @@ export class FuelPumpsService {
       },
       orderBy: { name: 'asc' },
     });
-    return pumps.map(this.toDto);
+    return pumps.map((item) => this.toDto(item));
   }
 
   async findById(id: string, tenantId: string): Promise<FuelPumpResponseDto> {

@@ -11,6 +11,8 @@
     "db:validate": "prisma validate --schema=schema/schema.prisma",
     "db:studio": "prisma studio --schema=schema/schema.prisma",
     "db:seed": "ts-node --transpile-only seed/index.ts",
+    "db:seed:fuel": "ts-node --transpile-only seed/seed-fuel-infrastructure.ts",
+    "db:seed:all": "pnpm db:seed && pnpm db:seed:fuel",
     "build": "prisma generate --schema=schema/schema.prisma && tsc",
     "typecheck": "tsc --noEmit"
   },

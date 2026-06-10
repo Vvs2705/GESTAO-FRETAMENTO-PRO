@@ -15,13 +15,13 @@ export class FuelSuppliersService {
       where: { tenantId, deletedAt: null },
       orderBy: { legalName: 'asc' },
     });
-    return suppliers.map(this.toDto);
+    return suppliers.map((s) => this.toDto(s as unknown as Record<string, unknown>));
   }
 
   async findById(id: string, tenantId: string): Promise<FuelSupplierResponseDto> {
     const s = await this.prisma.fuelSupplier.findFirst({ where: { id, tenantId, deletedAt: null } });
     if (!s) throw new NotFoundException({ error: 'FUEL_SUPPLIER_NOT_FOUND', message: 'Fornecedor não encontrado' });
-    return this.toDto(s);
+    return this.toDto(s as unknown as Record<string, unknown>);
   }
 
   async create(tenantId: string, dto: CreateFuelSupplierDto, actorId: string): Promise<FuelSupplierResponseDto> {
@@ -33,7 +33,7 @@ export class FuelSuppliersService {
     });
 
     await this.audit.log({ tenantId, actorUserId: actorId, action: 'fuel.supplier.created', entityType: 'FuelSupplier', entityId: supplier.id, after: supplier });
-    return this.toDto(supplier);
+    return this.toDto(supplier as unknown as Record<string, unknown>);
   }
 
   async approve(id: string, tenantId: string, approved: boolean, actorId: string): Promise<FuelSupplierResponseDto> {
@@ -43,10 +43,10 @@ export class FuelSuppliersService {
       data: { approved },
     });
     await this.audit.log({ tenantId, actorUserId: actorId, action: approved ? 'fuel.supplier.approved' : 'fuel.supplier.rejected', entityType: 'FuelSupplier', entityId: id });
-    return this.toDto(supplier);
+    return this.toDto(supplier as unknown as Record<string, unknown>);
   }
 
   private toDto(s: Record<string, unknown>): FuelSupplierResponseDto {
-    return s as FuelSupplierResponseDto;
+    return s as unknown as FuelSupplierResponseDto;
   }
 }

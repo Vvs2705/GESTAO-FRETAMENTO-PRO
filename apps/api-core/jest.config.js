@@ -10,11 +10,11 @@ module.exports = {
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
   moduleNameMapper: {
-    '^@gestao-fretamento-pro/types$': '<rootDir>/../../packages/types/src/index.ts',
-    '^@gestao-fretamento-pro/auth$': '<rootDir>/../../packages/auth/src/index.ts',
-    '^@gestao-fretamento-pro/config$': '<rootDir>/../../packages/config/src/index.ts',
-    '^@gestao-fretamento-pro/validators$': '<rootDir>/../../packages/validators/src/index.ts',
-    '^@gestao-fretamento-pro/database$': '<rootDir>/../../packages/database/src/index.ts',
+    '^@gestao-fretamento-pro/types$': '<rootDir>/../../../packages/types/src/index.ts',
+    '^@gestao-fretamento-pro/auth$': '<rootDir>/../../../packages/auth/src/index.ts',
+    '^@gestao-fretamento-pro/config$': '<rootDir>/../../../packages/config/src/index.ts',
+    '^@gestao-fretamento-pro/validators$': '<rootDir>/../../../packages/validators/src/index.ts',
+    '^@gestao-fretamento-pro/database$': '<rootDir>/../../../packages/database/src/index.ts',
   },
   globals: {
     'ts-jest': {

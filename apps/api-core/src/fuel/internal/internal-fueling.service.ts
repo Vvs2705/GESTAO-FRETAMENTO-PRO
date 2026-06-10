@@ -19,7 +19,7 @@ export class InternalFuelingService {
     private readonly audit: AuditService,
   ) {}
 
-  async findAll(tenantId: string, filters?: { branchId?: string; vehicleId?: string; status?: string }) {
+  async findAll(tenantId: string, filters?: { branchId?: string | undefined; vehicleId?: string | undefined; status?: string | undefined }) {
     const rows = await this.prisma.internalFueling.findMany({
       where: {
         tenantId,
@@ -252,7 +252,7 @@ export class InternalFuelingService {
   private toDto(f: Record<string, unknown>): InternalFuelingResponseDto {
     const n = (v: unknown) => (v !== null && v !== undefined ? Number(v) : null);
     return {
-      ...(f as InternalFuelingResponseDto),
+      ...(f as unknown as InternalFuelingResponseDto),
       odometer: Number(f['odometer']),
       liters: Number(f['liters']),
       hourmeter: n(f['hourmeter']),

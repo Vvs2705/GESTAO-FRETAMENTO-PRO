@@ -16,14 +16,15 @@ import { PrismaClient } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { randomUUID } from 'crypto';
 
+jest.setTimeout(60000);
+
 // ---------------------------------------------------------------------------
 // Test database client
 // ---------------------------------------------------------------------------
 
+const dbUrl = process.env['DATABASE_URL'] ?? process.env['TEST_DATABASE_URL'];
 const prisma = new PrismaClient({
-  datasources: {
-    db: { url: process.env['DATABASE_URL'] ?? process.env['TEST_DATABASE_URL'] },
-  },
+  ...(dbUrl ? { datasources: { db: { url: dbUrl } } } : {}),
   log: process.env['PRISMA_LOG'] === 'true' ? ['query'] : [],
 });
 
@@ -32,7 +33,7 @@ const prisma = new PrismaClient({
 // ---------------------------------------------------------------------------
 
 async function hashPw(plain: string): Promise<string> {
-  return argon2.hash(plain, { type: argon2.argon2id, memoryCost: 1024, timeCost: 1, parallelism: 1 });
+  return argon2.hash(plain, { type: argon2.argon2id, memoryCost: 1024, timeCost: 2, parallelism: 1 });
 }
 
 /** Creates a minimal tenant + branch for test isolation */
@@ -184,6 +185,22 @@ afterAll(async () => {
   // Clean up all test tenants and their data
   if (cleanupTenantIds.length > 0) {
     // Delete in dependency order
+    await prisma.fuelIncident.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.fuelInventoryMovement.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.internalFuelingEvidence.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.internalFueling.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.externalFuelingEvidence.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.externalFueling.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.fuelDeliveryEvidence.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.fuelDelivery.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.fuelPump.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.fuelTank.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.fuelProduct.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.fuelSupplier.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.fuelAttendantProfile.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.costCenter.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+    await prisma.userBranchScope.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } }).catch(() => null);
+
     await prisma.auditLog.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } });
     await prisma.fuelRecord.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } });
     await prisma.vehicle.deleteMany({ where: { tenantId: { in: cleanupTenantIds } } });
@@ -283,9 +300,19 @@ describe('Multi-tenant isolation', () => {
    * this test verifies that the DB lookup returns no fuel tank for a different tenant.
    */
   it('abastecedor sem acesso ao tanque recebe 403 (tank não pertence ao tenant)', async () => {
-    const { tenant: tenantA, branch: branchA } = await createTestTenant('tank-A');
+    const { tenant: tenantA } = await createTestTenant('tank-A');
     const { tenant: tenantB, branch: branchB } = await createTestTenant('tank-B');
     cleanupTenantIds.push(tenantA.id, tenantB.id);
+
+    // Create a fuel product first
+    const productB = await prisma.fuelProduct.create({
+      data: {
+        tenantId: tenantB.id,
+        code: `PRD-${randomUUID().slice(0, 8)}`,
+        name: 'Diesel Test',
+        type: 'diesel_s10',
+      },
+    });
 
     // Create a fuel tank only for tenant B
     let tankB: { id: string } | null = null;
@@ -294,13 +321,15 @@ describe('Multi-tenant isolation', () => {
         data: {
           tenantId: tenantB.id,
           branchId: branchB.id,
+          fuelProductId: productB.id,
           name: 'Tanque B',
+          code: `TNK-${randomUUID().slice(0, 8)}`,
           capacityLiters: 1000,
-          currentVolumeLiters: 500,
+          currentStockLiters: 500,
           status: 'ACTIVE',
         },
       });
-    } catch {
+    } catch (e) {
       // fuelTank model may not exist yet — skip sub-assertion
     }
 

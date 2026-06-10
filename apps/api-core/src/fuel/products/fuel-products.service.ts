@@ -14,7 +14,7 @@ export class FuelProductsService {
       },
       orderBy: { name: 'asc' },
     });
-    return products.map(this.toDto);
+    return products.map((item) => this.toDto(item));
   }
 
   async findById(id: string, tenantId: string): Promise<FuelProductResponseDto> {

@@ -215,7 +215,7 @@ export class FuelDeliveriesService {
   private toDto(r: Record<string, unknown>): FuelDeliveryResponseDto {
     const n = (v: unknown) => (v !== null && v !== undefined ? Number(v) : null);
     return {
-      ...(r as FuelDeliveryResponseDto),
+      ...(r as unknown as FuelDeliveryResponseDto),
       contractedLiters: Number(r['contractedLiters']),
       declaredLiters: Number(r['declaredLiters']),
       receivedLiters: n(r['receivedLiters']),

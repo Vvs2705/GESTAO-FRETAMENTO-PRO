@@ -17,7 +17,7 @@ export class ExternalFuelingService {
     private readonly audit: AuditService,
   ) {}
 
-  async findAll(tenantId: string, filters?: { vehicleId?: string; driverId?: string; status?: string }) {
+  async findAll(tenantId: string, filters?: { vehicleId?: string | undefined; driverId?: string | undefined; status?: string | undefined }) {
     const rows = await this.prisma.externalFueling.findMany({
       where: {
         tenantId,

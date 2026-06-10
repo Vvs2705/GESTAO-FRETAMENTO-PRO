@@ -9,6 +9,9 @@ import { InternalFuelingModule } from './internal/internal-fueling.module';
 import { FuelDeliveriesModule } from './deliveries/fuel-deliveries.module';
 import { ExternalFuelingModule } from './external/external-fueling.module';
 import { FuelIncidentsModule } from './incidents/fuel-incidents.module';
+import { FuelStationsModule } from './stations/fuel-stations.module';
+import { FuelAttendantsModule } from './attendants/fuel-attendants.module';
+import { FuelReconciliationModule } from './reconciliation/fuel-reconciliation.module';
 
 @Module({
   imports: [
@@ -20,6 +23,9 @@ import { FuelIncidentsModule } from './incidents/fuel-incidents.module';
     FuelDeliveriesModule,
     ExternalFuelingModule,
     FuelIncidentsModule,
+    FuelStationsModule,
+    FuelAttendantsModule,
+    FuelReconciliationModule,
   ],
   controllers: [FuelController],
   providers: [FuelService],
@@ -33,6 +39,9 @@ import { FuelIncidentsModule } from './incidents/fuel-incidents.module';
     FuelDeliveriesModule,
     ExternalFuelingModule,
     FuelIncidentsModule,
+    FuelStationsModule,
+    FuelAttendantsModule,
+    FuelReconciliationModule,
   ],
 })
 export class FuelModule {}

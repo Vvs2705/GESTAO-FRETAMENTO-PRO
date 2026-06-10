@@ -732,11 +732,12 @@ export class AnalyticsService {
     const onTime = parseInt(onTimeData?.on_time ?? '0', 10);
     const totalCompleted = parseInt(onTimeData?.total_completed ?? '0', 10);
 
+    const avgDuration = avgDurationRows[0]?.avg_duration_minutes ?? null;
     const result: OperationsAnalyticsResponseDto = {
       totalTrips: parseInt(totalRows[0]?.count ?? '0', 10),
       tripsByStatus: statusRows.map((r): TripByStatusItem => ({ status: r.status, count: parseInt(r.count, 10) })),
       onTimeRatePercent: totalCompleted > 0 ? Math.round((onTime / totalCompleted) * 1000) / 10 : 0,
-      avgDurationMinutes: avgDurationRows[0]?.avg_duration_minutes != null ? parseFloat(avgDurationRows[0].avg_duration_minutes) : null,
+      avgDurationMinutes: avgDuration !== null ? parseFloat(avgDuration) : null,
       occurrencesCount: parseInt(occurrenceRows[0]?.count ?? '0', 10),
       generatedAt: now,
     };

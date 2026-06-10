@@ -11,6 +11,7 @@ import { NotificationModule } from './notifications/notification.module';
 import { DocumentExpiryModule } from './documents/document-expiry.module';
 import { FuelAnomalyModule } from './fuel-anomaly/fuel-anomaly.module';
 import { ReportsModule } from './reports/reports.module';
+import { FuelSummaryModule } from './fuel-summary/fuel-summary.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { ReportsModule } from './reports/reports.module';
     DocumentExpiryModule,
     FuelAnomalyModule,
     ReportsModule,
+    FuelSummaryModule,
   ],
 })
 export class WorkerModule {}

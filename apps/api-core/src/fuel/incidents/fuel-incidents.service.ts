@@ -10,7 +10,7 @@ export class FuelIncidentsService {
     private readonly audit: AuditService,
   ) {}
 
-  async findAll(tenantId: string, filters?: { branchId?: string; severity?: string; status?: string }) {
+  async findAll(tenantId: string, filters?: { branchId?: string | undefined; severity?: string | undefined; status?: string | undefined }) {
     return this.prisma.fuelIncident.findMany({
       where: {
         tenantId,

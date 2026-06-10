@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsEnum, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsEnum, MaxLength } from 'class-validator';
 
 export enum FuelProductType {
   DIESEL_S10 = 'diesel_s10',

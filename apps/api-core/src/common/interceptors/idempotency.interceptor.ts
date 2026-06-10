@@ -79,7 +79,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
     );
   }
 
-  private async tryGetCached(redisKey: string, key: string): Promise<unknown | null> {
+  private async tryGetCached(redisKey: string, key: string): Promise<unknown> {
     try {
       const raw = await this.redis.get(redisKey);
       if (raw !== null) return JSON.parse(raw) as unknown;

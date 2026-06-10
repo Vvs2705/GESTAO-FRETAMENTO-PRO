@@ -22,6 +22,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|mockServiceWorker.js).*)",
+    // Exclui API, assets do Next e arquivos estáticos públicos (robots.txt, icon.svg, imagens)
+    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|icon.svg|mockServiceWorker.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
   ],
 };

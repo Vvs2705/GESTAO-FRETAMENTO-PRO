@@ -7,6 +7,7 @@ import { Sidebar, TopBar, Breadcrumb } from "@gestao-fretamento-pro/ui";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [selectedFilial, setSelectedFilial] = React.useState("fil_1");
+  const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
 
   if (!user) {
     return (
@@ -26,17 +27,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar
         currentPath={typeof window !== "undefined" ? window.location.pathname : "/"}
         role={user.role}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
         onNavigate={(path) => {
           window.location.href = path;
         }}
       />
-      
+
       <div className="flex flex-col flex-grow overflow-hidden">
         <TopBar
           userName={user.name}
           userRole={user.role}
           notifications={notifications}
           onLogout={logout}
+          onMenuClick={() => setMobileNavOpen(true)}
           selectedFilial={selectedFilial}
           onFilialChange={setSelectedFilial}
           filiais={[
@@ -45,7 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ]}
         />
 
-        <div className="flex-grow overflow-y-auto px-8 py-6 space-y-6 scrollbar-thin">
+        <div className="flex-grow overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 scrollbar-thin">
           <Breadcrumb
             items={[
               { label: "Dashboard", path: "/" },

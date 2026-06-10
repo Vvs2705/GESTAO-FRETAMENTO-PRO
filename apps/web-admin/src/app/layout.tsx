@@ -34,6 +34,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="pt-BR" className="dark">
+      <head>
+        <title>Gestão Fretamento Pro — Central de Operação da Frota</title>
+        <meta
+          name="description"
+          content="Plataforma de gestão de fretamento: operação, frota, abastecimento, manutenção, viagens e financeiro em um só lugar."
+        />
+        <meta name="robots" content="noindex, nofollow" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body className="min-h-screen bg-background text-foreground antialiased transition-colors duration-300">
         <QueryClientProvider client={queryClient}>
           <AuthProvider>

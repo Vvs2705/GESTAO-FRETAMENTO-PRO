@@ -1,0 +1,3 @@
+# Aplicação interna (acesso restrito) — não indexar no Google.
+User-agent: *
+Disallow: /

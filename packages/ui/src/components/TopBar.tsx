@@ -1,6 +1,6 @@
 import * as React from "react";
 import { cn } from "../utils/cn";
-import { Bell, LogOut, User, Globe } from "lucide-react";
+import { Bell, LogOut, User, Globe, Menu } from "lucide-react";
 
 export interface NotificationItem {
   id: string;
@@ -19,6 +19,8 @@ export interface TopBarProps extends React.HTMLAttributes<HTMLDivElement> {
   notifications?: NotificationItem[];
   onNotificationClick?: (id: string) => void;
   onLogout?: () => void;
+  /** Abre o menu lateral (drawer) em telas pequenas (< lg). */
+  onMenuClick?: () => void;
 }
 
 export function TopBar({
@@ -30,6 +32,7 @@ export function TopBar({
   notifications = [],
   onNotificationClick,
   onLogout,
+  onMenuClick,
   className,
   ...props
 }: TopBarProps) {
@@ -47,6 +50,14 @@ export function TopBar({
       {...props}
     >
       <div className="flex items-center gap-3">
+        {/* Abrir menu (mobile) */}
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          aria-label="Abrir menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
         {onFilialChange && filiais.length > 0 && (
           <div className="flex items-center gap-2">
             <Globe className="w-4 h-4 text-slate-400" />

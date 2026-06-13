@@ -17,7 +17,7 @@
 | 70% | `max-w-[1440px] mx-auto` no container (telas grandes/TV) | DESIGN | ✅ |
 | 80% | Números tabulares/mono: token `--font-mono`, família `font-mono` no Tailwind, `tabular-nums` em `KpiCard` | DESIGN | ✅ |
 | 90% | Validação: typecheck 13/13, lint 8/8, unit 10/10, build OK, E2E 4/4; roadmap competitivo (`docs/10-roadmap-competitivo.md`) | QA | ✅ |
-| 100% | Commit + push + PR, CI verde, deploy | Entrega | ⏳ |
+| 100% | Commit + push + PR #1, **CI verde**, **Vercel preview deployado** — merge p/ produção aguardando 1 clique do usuário | Entrega | 🟡 |
 
 ---
 
@@ -60,6 +60,26 @@
 - `pnpm exec playwright test` (E2E) → **4/4** (login/logout, credenciais inválidas, guard de rota, wizard 8 etapas) ✅
 
 **O que falta:** commit + push + PR → CI verde → deploy (frontend Vercel / api via pipeline).
+
+---
+
+## 13/06/2026 — 100% (entrega) — FASE E — Commit, CI e Deploy
+
+**Status:** Entregue; merge de produção pendente de confirmação ✅🟡
+
+**O que foi feito:**
+- Commit `5069378` na branch `claude/zen-newton-ae4c86`, push e **PR #1** aberto
+  (https://github.com/Vvs2705/GESTAO-FRETAMENTO-PRO/pull/1).
+- **CI verde** (verificado): Install ✅ · Lint ✅ · Type check ✅ · Unit tests ✅ ·
+  Security scan/Trivy ✅. `Build & push Docker` corretamente *skipping* (só em push p/ main).
+- **Vercel: Deployment completed** — preview da PR publicado
+  (`gestao-fretamento-web`, projeto `v-stack-solution`).
+
+**O que falta (1 ação do usuário):**
+- **Merge da PR #1 para `main`** → dispara o deploy de **produção** (Vercel prod +
+  pipeline `staging-deploy` da API). O merge foi **bloqueado pelo gate de segurança
+  do harness** (proteção contra deploy de produção automático). Basta o usuário
+  aprovar/mergear a PR #1 — todo o resto está validado e verde.
 
 ---
 

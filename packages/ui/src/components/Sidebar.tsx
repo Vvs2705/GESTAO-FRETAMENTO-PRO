@@ -20,6 +20,13 @@ export interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
 
   currentPath: string;
   role: string;
+  /**
+   * Componente de link usado para renderizar cada item do menu. Recebe `href`
+   * e renderiza uma âncora `<a>`. Por padrão usa `"a"` (semântica + Ctrl+clique
+   * + abrir em nova aba). No Next.js, injete o `Link` para manter o roteamento
+   * client-side (SPA). Corrige C4 (navegação só com `<button>`).
+   */
+  LinkComponent?: React.ElementType;
   onNavigate?: (path: string) => void;
   /** Controle do drawer em telas pequenas (< lg). */
   mobileOpen?: boolean;
@@ -29,6 +36,7 @@ export interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
 export function Sidebar({
   currentPath,
   role,
+  LinkComponent = "a",
   onNavigate,
   mobileOpen = false,
   onMobileClose,
@@ -212,14 +220,18 @@ export function Sidebar({
               {cat.items.map((item) => {
                 const isActive = currentPath.startsWith(item.path);
                 return (
-                  <button
+                  <LinkComponent
                     key={item.path}
+                    href={item.path}
+                    title={isCollapsed ? item.label : undefined}
+                    aria-current={isActive ? "page" : undefined}
                     onClick={() => {
                       onNavigate && onNavigate(item.path);
                       onMobileClose && onMobileClose();
                     }}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs transition-all duration-200 select-none min-h-[44px]",
+                      isCollapsed && "justify-center",
                       isActive
                         ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 scale-[0.99] font-bold"
                         : "text-slate-500 hover:bg-slate-50/50 dark:hover:bg-slate-900/40 font-medium"
@@ -229,7 +241,7 @@ export function Sidebar({
                       {item.icon}
                     </div>
                     {!isCollapsed && <span className="truncate">{item.label}</span>}
-                  </button>
+                  </LinkComponent>
                 );
               })}
             </div>

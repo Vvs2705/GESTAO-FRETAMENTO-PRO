@@ -9,10 +9,12 @@ export interface BreadcrumbItem {
 
 export interface BreadcrumbProps extends React.HTMLAttributes<HTMLElement> {
   items: BreadcrumbItem[];
+  /** Componente de link (recebe `href`). Padrão `"a"`; injete o `Link` do Next. */
+  LinkComponent?: React.ElementType;
   onNavigate?: (path: string) => void;
 }
 
-export function Breadcrumb({ items, onNavigate, className, ...props }: BreadcrumbProps) {
+export function Breadcrumb({ items, LinkComponent = "a", onNavigate, className, ...props }: BreadcrumbProps) {
   return (
     <nav
       className={cn("flex items-center text-xs font-semibold text-slate-500 select-none", className)}
@@ -29,13 +31,13 @@ export function Breadcrumb({ items, onNavigate, className, ...props }: Breadcrum
                   {item.label}
                 </span>
               ) : (
-                <button
-                  type="button"
+                <LinkComponent
+                  href={item.path}
                   onClick={() => onNavigate && onNavigate(item.path!)}
                   className="hover:text-primary transition-colors cursor-pointer outline-none focus:text-primary text-slate-400"
                 >
                   {item.label}
-                </button>
+                </LinkComponent>
               )}
             </li>
           );

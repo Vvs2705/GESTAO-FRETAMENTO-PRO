@@ -1,5 +1,9 @@
 :root {
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  /* Fonte monoespaçada para números de KPI/métricas (efeito "centro de
+     operações"): números alinhados e tabulares. Geist Mono se disponível,
+     senão a pilha mono do sistema. */
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 
   /* Font sizes */
   --font-size-xs: 0.75rem;

@@ -21,6 +21,7 @@ export * from "./components/FileUploadField";
 export * from "./components/SearchInput";
 export * from "./components/Sidebar";
 export * from "./components/TopBar";
+export * from "./components/PageHeader";
 export * from "./components/Breadcrumb";
 export * from "./components/TabNav";
 export * from "./components/toast";

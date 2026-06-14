@@ -5,6 +5,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EnvSchema, type Env } from '@gestao-fretamento-pro/config';
 import { PrismaModule } from './prisma/prisma.module';
+import { CommonModule } from './common/common.module';
 import { RedisModule } from './redis/redis.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
@@ -58,6 +59,7 @@ import { IdempotencyInterceptor } from './common/interceptors/idempotency.interc
 
     ScheduleModule.forRoot(),
     PrismaModule,
+    CommonModule,
     RedisModule,
     HealthModule,
     AuthModule,

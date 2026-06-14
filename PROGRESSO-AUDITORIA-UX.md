@@ -83,4 +83,27 @@
 
 ---
 
+## 14/06/2026 — Subida local do stack completo (back + front) para visualização
+
+**Objetivo:** ver todas as correções rodando, no back e no front.
+
+**Front (correções de UX/acessibilidade):**
+- Local: `pnpm --filter web-admin dev` → **http://localhost:3000** (MSW mockado). Login demo: `admin@fretamento.com` / `123456`.
+- Online (preview da PR #1, já deployado): **https://gestao-fretamento-web-git-claude-zen-ne-a61bb6-v-stack-solution.vercel.app**
+- O que dá para ver: título por aba, `<h1>` por tela, navegação semântica `<a href>` (Ctrl+clique/nova aba), breadcrumb por rota, container `max-w-[1440px]`, números de KPI tabulares/mono, favicon.
+
+**Back (API real, dados semeados):**
+- Postgres + Redis via Docker: `docker compose up -d postgres redis`.
+- Migrações: `prisma migrate deploy`; seed: `db:seed` (com `ADMIN_EMAIL`/`ADMIN_PASSWORD`).
+- API: `node apps/api-core/dist/main.js` em **PORT=3001** → Swagger **http://localhost:3001/docs**, health **/v1/health**. Admin real: `admin@fretamento.com` / `Admin@123456`.
+- Verificado: `/v1/health` 200, Swagger 200, `POST /v1/auth/login` retorna JWT (Postgres + Argon2 + JWT ok).
+
+**Correção de backend necessária para subir o app (bug pré-existente, fora da auditoria):**
+- Vários módulos (`fuel/*`, `finance/cost-centers`) injetavam `AuditService` sem declará-lo em `providers` → `UnknownDependenciesException`, app não subia.
+- **Fix:** `apps/api-core/src/common/common.module.ts` (`@Global`) provê/exporta `AuditService`; importado no `AppModule`. Commit `c7d83d0` (na PR #1). typecheck + lint OK.
+
+**Nota de processo (incremental builds):** `nest build` usa `deleteOutDir` + `incremental:true`; um `*.tsbuildinfo` obsoleto fazia o build sair 0 sem emitir `dist/main.js`. Remover os `tsconfig*.tsbuildinfo` força o emit completo.
+
+---
+
 > Arquivo atualizado automaticamente a cada checkpoint (10%).

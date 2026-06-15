@@ -112,7 +112,7 @@ export default function UsersPage() {
       id: "actions",
       header: "",
       cell: ({ row }) =>
-        can("user.manage") || can("role.manage") ? (
+        can("user.update") ? (
           <div className="flex items-center justify-end gap-2">
             <button onClick={() => openEdit(row.original)} className="text-xs font-semibold text-primary hover:underline">
               Editar
@@ -138,7 +138,7 @@ export default function UsersPage() {
     return <ErrorState description="Não foi possível carregar os usuários." onRetry={() => list.refetch()} />;
   }
 
-  const canManage = can("user.manage") || can("role.manage");
+  const canManage = can("user.create");
 
   return (
     <div className="space-y-4">

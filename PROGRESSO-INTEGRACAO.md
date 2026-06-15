@@ -15,20 +15,20 @@
 | GAP-011 | Estados loading/empty/error padronizados | ✅ (via DataTable + ErrorState no padrão) |
 | GAP-012 | Botões respeitam RBAC (`can()`) | ✅ (aplicado nas telas feitas) |
 | GAP-001/002/003 | Infra: `NEXT_PUBLIC_API_URL` (Vercel), api-core pública + CORS, MSW dev-only | ✅ **já feito** (verificado em produção — ver nota abaixo) |
-| GAP-030 | Wizard de viagem cria de verdade (`POST /v1/trips`) | ⏳ |
-| GAP-031 | Viagens — lista real + ações de status | ⏳ |
-| GAP-032 | Torre Operacional real (`trips/today|delayed`) | ⏳ |
-| GAP-033 | Ocorrências — CRUD + resolver/escalar | ⏳ |
-| GAP-034 | Rotas — criar a tela (CRUD + pontos) | ⏳ |
-| GAP-040 | Cockpit Executivo real (analytics) | ⏳ |
-| GAP-041 | Frota real | ⏳ |
-| GAP-042 | Abastecimento real + lançamento | ⏳ |
-| GAP-043 | Financeiro real + centros de custo | ⏳ |
-| GAP-050 | Notificações reais + sino do TopBar | ⏳ |
-| GAP-051 | Manutenção real | ⏳ |
-| GAP-052 | Configurações reais (tenant/filiais/cargos) | ⏳ |
-| GAP-053 | Documents — decidir (sem backend) | ⏳ |
-| GAP-054 | Auditoria (UI opcional) | ⏳ |
+| GAP-030 | Wizard de viagem cria de verdade (`POST /v1/trips`) | ✅ |
+| GAP-031 | Viagens — lista real + ações de status | ✅ |
+| GAP-032 | Torre Operacional real (`trips/today|delayed`) | ✅ |
+| GAP-033 | Ocorrências — CRUD + resolver/escalar | ✅ |
+| GAP-034 | Rotas — criar a tela (CRUD) + item no menu | ✅ (edição de paradas detalhadas = backlog) |
+| GAP-040 | Cockpit Executivo real (analytics) | ✅ |
+| GAP-041 | Frota real | ✅ |
+| GAP-042 | Abastecimento real + lançamento | ✅ |
+| GAP-043 | Financeiro real + centros de custo | ✅ |
+| GAP-050 | Notificações reais | ✅ tela (⏳ ligar o sino do TopBar à API) |
+| GAP-051 | Manutenção real | ✅ |
+| GAP-052 | Configurações reais (tenant/filiais/cargos) | ✅ |
+| GAP-053 | Documents — sem backend → EmptyState informativo | ✅ (decisão) |
+| GAP-054 | Auditoria (UI opcional) | ⏳ backlog |
 
 ## Checkpoints
 
@@ -51,4 +51,13 @@ Verificação ao vivo (não era pendente — minha auditoria flagou com base no 
 - Bundle de produção (`/_next/static/chunks/.../login` e `layout`) referencia **`gfp-api-core.fly.dev/v1`** → ou seja, `NEXT_PUBLIC_API_URL` **está setada na Vercel**.
 - Procedimento completo de infra documentado em **`docs/DEPLOY.md`**.
 
-**Consequência:** não há pré-requisito de infra pendente. As 4 telas já entregues passam a funcionar em produção assim que a **PR #2 for mergeada na `main`** (a Vercel redeploya automaticamente). Login de produção usa a conta real (`vsouz009@gmail.com`), não o mock de dev.
+**Consequência:** não há pré-requisito de infra pendente. As telas já entregues passam a funcionar em produção assim que a **PR #2 for mergeada na `main`** (a Vercel redeploya automaticamente). Login de produção usa a conta real (`vsouz009@gmail.com`), não o mock de dev.
+
+### 15/06/2026 — EPICs 3/4/5 concluídos (equipe paralela)
+Telas restantes ligadas à API em paralelo por 5 agentes + revisão central (typecheck + lint + build OK). Commits: `b9c7cca` (ocorrências/rotas), `3b44994` (viagens/wizard), `305d6ff` (operations, notifications, finance, maintenance, settings, executive, fleet, fuel, documents).
+
+**Telas reais agora:** Veículos, Motoristas, Clientes, Usuários, Ocorrências, Rotas, Viagens (+wizard real), Torre Operacional, Cockpit Executivo, Frota, Abastecimento (+lançamento), Financeiro, Manutenção, Configurações, Notificações. Documents = EmptyState (sem backend).
+
+**Resíduos (backlog menor):** ligar o sino de notificações do `TopBar` à API (hoje array fixo no `(dashboard)/layout.tsx`); editor de paradas detalhadas de Rotas (`PATCH /routes/:id/points`); UI de Auditoria (GAP-054); backend do módulo Documents (GAP-053).
+
+> **Para ver em produção:** mergear a PR #2 na `main` → deploy automático na Vercel contra a api-core real (`gfp-api-core.fly.dev`).

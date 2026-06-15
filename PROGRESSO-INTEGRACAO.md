@@ -14,7 +14,7 @@
 | GAP-023 | Usuários — criar/editar + status + cargo via `/roles` | ✅ |
 | GAP-011 | Estados loading/empty/error padronizados | ✅ (via DataTable + ErrorState no padrão) |
 | GAP-012 | Botões respeitam RBAC (`can()`) | ✅ (aplicado nas telas feitas) |
-| GAP-001/002/003 | Infra: `NEXT_PUBLIC_API_URL` (Vercel), api-core pública + CORS, MSW dev-only | ⏳ pendente (config/infra) |
+| GAP-001/002/003 | Infra: `NEXT_PUBLIC_API_URL` (Vercel), api-core pública + CORS, MSW dev-only | ✅ **já feito** (verificado em produção — ver nota abaixo) |
 | GAP-030 | Wizard de viagem cria de verdade (`POST /v1/trips`) | ⏳ |
 | GAP-031 | Viagens — lista real + ações de status | ⏳ |
 | GAP-032 | Torre Operacional real (`trips/today|delayed`) | ⏳ |
@@ -44,4 +44,11 @@
 
 **O que falta:** EPIC 0 (infra/config de produção) e EPICs 3–5 (operação, dashboards, suporte) — ver tabela acima. As telas restantes seguem o **mesmo padrão** já provado (replicação).
 
-> ⚠️ Importante: para as telas funcionarem em produção, **GAP-001/002** (EPIC 0) são pré-requisito — sem `NEXT_PUBLIC_API_URL` e api-core pública com CORS, o front não alcança a API.
+### 15/06/2026 — EPIC 0 (Infra) verificado: já estava pronto ✅
+Verificação ao vivo (não era pendente — minha auditoria flagou com base no fallback `localhost` do código-fonte, mas o deploy real já sobrescreve):
+- `GET https://gfp-api-core.fly.dev/v1/health` → **200** (api-core no ar, Fly.io).
+- CORS: resposta com `access-control-allow-origin: https://gestao-fretamento-web.vercel.app` ✅.
+- Bundle de produção (`/_next/static/chunks/.../login` e `layout`) referencia **`gfp-api-core.fly.dev/v1`** → ou seja, `NEXT_PUBLIC_API_URL` **está setada na Vercel**.
+- Procedimento completo de infra documentado em **`docs/DEPLOY.md`**.
+
+**Consequência:** não há pré-requisito de infra pendente. As 4 telas já entregues passam a funcionar em produção assim que a **PR #2 for mergeada na `main`** (a Vercel redeploya automaticamente). Login de produção usa a conta real (`vsouz009@gmail.com`), não o mock de dev.

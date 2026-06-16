@@ -79,6 +79,14 @@ const ROUTES: Array<{ match: string; meta: PageMeta }> = [
     },
   },
   {
+    match: "/routes",
+    meta: {
+      title: "Rotas",
+      description: "Itinerários e trajetos usados nas viagens.",
+      breadcrumb: [{ label: "Operacional" }, { label: "Rotas" }],
+    },
+  },
+  {
     match: "/drivers",
     meta: {
       title: "Motoristas",

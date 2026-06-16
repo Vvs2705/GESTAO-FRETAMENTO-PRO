@@ -4,6 +4,7 @@ import { Logo } from "./Logo";
 import {
   LayoutDashboard,
   MapPin,
+  Route,
   Truck,
   Users,
   Settings,
@@ -89,6 +90,12 @@ export function Sidebar({
             label: "Viagens",
             path: "/trips",
             icon: <MapPin className="w-4 h-4" />,
+            roles: ["admin", "ceo", "operator", "supervisor"],
+          },
+          {
+            label: "Rotas",
+            path: "/routes",
+            icon: <Route className="w-4 h-4" />,
             roles: ["admin", "ceo", "operator", "supervisor"],
           },
           {

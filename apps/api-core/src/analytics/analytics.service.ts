@@ -473,30 +473,30 @@ export class AnalyticsService {
     const [tripRows, vehicleRows, fuelRows, anomalyRows, driverRows, contractRows] = await Promise.all([
       this.prisma.$queryRawUnsafe<RawCountRow[]>(
         `SELECT COUNT(*)::text AS count FROM trips
-         WHERE tenant_id = $1 AND deleted_at IS NULL AND scheduled_start_at >= $2 AND scheduled_start_at <= $3`,
+         WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND scheduled_start_at >= $2 AND scheduled_start_at <= $3`,
         tenantId, from, to,
       ),
       this.prisma.$queryRawUnsafe<RawCountRow[]>(
-        `SELECT COUNT(*)::text AS count FROM vehicles WHERE tenant_id = $1 AND deleted_at IS NULL`,
+        `SELECT COUNT(*)::text AS count FROM vehicles WHERE tenant_id = $1::uuid AND deleted_at IS NULL`,
         tenantId,
       ),
       this.prisma.$queryRawUnsafe<RawFuelSumRow[]>(
         `SELECT COALESCE(SUM(total_amount),0)::text AS total_cost, COALESCE(SUM(liters),0)::text AS total_liters
-         FROM fuel_records WHERE tenant_id = $1 AND deleted_at IS NULL AND supplied_at >= $2 AND supplied_at <= $3`,
+         FROM fuel_records WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND supplied_at >= $2 AND supplied_at <= $3`,
         tenantId, from, to,
       ),
       this.prisma.$queryRawUnsafe<RawCountRow[]>(
         `SELECT COUNT(*)::text AS count FROM fuel_records
-         WHERE tenant_id = $1 AND deleted_at IS NULL AND anomaly_flag = true AND supplied_at >= $2 AND supplied_at <= $3`,
+         WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND anomaly_flag = true AND supplied_at >= $2 AND supplied_at <= $3`,
         tenantId, from, to,
       ),
       this.prisma.$queryRawUnsafe<RawCountRow[]>(
         `SELECT COUNT(*)::text AS count FROM drivers
-         WHERE tenant_id = $1 AND deleted_at IS NULL AND availability_status IN ('AVAILABLE','ON_TRIP')`,
+         WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND availability_status IN ('AVAILABLE','ON_TRIP')`,
         tenantId,
       ),
       this.prisma.$queryRawUnsafe<RawCountRow[]>(
-        `SELECT COUNT(*)::text AS count FROM contracts WHERE tenant_id = $1 AND status = 'ACTIVE'`,
+        `SELECT COUNT(*)::text AS count FROM contracts WHERE tenant_id = $1::uuid AND status = 'ACTIVE'`,
         tenantId,
       ),
     ]);
@@ -529,13 +529,13 @@ export class AnalyticsService {
           `SELECT TO_CHAR(DATE_TRUNC('month', supplied_at),'YYYY-MM') AS period,
                   COALESCE(SUM(total_amount),0)::text AS total_cost,
                   COALESCE(SUM(liters),0)::text AS total_liters
-           FROM fuel_records WHERE tenant_id = $1 AND deleted_at IS NULL AND supplied_at >= $2 AND supplied_at <= $3
+           FROM fuel_records WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND supplied_at >= $2 AND supplied_at <= $3
            GROUP BY period ORDER BY period`,
           tenantId, from, to,
         ),
         this.prisma.$queryRawUnsafe<RawProductRow[]>(
           `SELECT fuel_type, COALESCE(SUM(liters),0)::text AS total_liters, COUNT(*)::text AS record_count
-           FROM fuel_records WHERE tenant_id = $1 AND deleted_at IS NULL AND supplied_at >= $2 AND supplied_at <= $3
+           FROM fuel_records WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND supplied_at >= $2 AND supplied_at <= $3
            GROUP BY fuel_type`,
           tenantId, from, to,
         ),
@@ -544,26 +544,26 @@ export class AnalyticsService {
                   COALESCE(SUM(fr.total_amount),0)::text AS total_cost,
                   COALESCE(SUM(fr.liters),0)::text AS total_liters
            FROM fuel_records fr JOIN vehicles v ON v.id = fr.vehicle_id
-           WHERE fr.tenant_id = $1 AND fr.deleted_at IS NULL AND fr.supplied_at >= $2 AND fr.supplied_at <= $3
+           WHERE fr.tenant_id = $1::uuid AND fr.deleted_at IS NULL AND fr.supplied_at >= $2 AND fr.supplied_at <= $3
            GROUP BY fr.vehicle_id, v.plate ORDER BY total_cost DESC LIMIT 20`,
           tenantId, from, to,
         ),
         this.prisma.$queryRawUnsafe<Array<{ vehicle_id: string; max_odo: string; min_odo: string; total_liters: string }>>(
           `SELECT vehicle_id, MAX(odometer)::text AS max_odo, MIN(odometer)::text AS min_odo, COALESCE(SUM(liters),0)::text AS total_liters
-           FROM fuel_records WHERE tenant_id = $1 AND deleted_at IS NULL AND supplied_at >= $2 AND supplied_at <= $3 AND odometer IS NOT NULL
+           FROM fuel_records WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND supplied_at >= $2 AND supplied_at <= $3 AND odometer IS NOT NULL
            GROUP BY vehicle_id`,
           tenantId, from, to,
         ),
         this.prisma.$queryRawUnsafe<RawDeliveryRow[]>(
           `SELECT COUNT(*)::text AS count FROM fuel_deliveries
-           WHERE tenant_id = $1 AND deleted_at IS NULL AND delivery_date >= $2 AND delivery_date <= $3`,
+           WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND delivery_date >= $2 AND delivery_date <= $3`,
           tenantId, from, to,
         ).catch(() => [{ count: '0' }] as RawDeliveryRow[]),
         this.prisma.$queryRawUnsafe<RawAnomalyRow[]>(
           `SELECT fr.id, fr.vehicle_id, v.plate AS vehicle_plate,
                   fr.anomaly_reason, fr.total_amount::text, fr.liters::text, fr.supplied_at
            FROM fuel_records fr JOIN vehicles v ON v.id = fr.vehicle_id
-           WHERE fr.tenant_id = $1 AND fr.deleted_at IS NULL AND fr.anomaly_flag = true
+           WHERE fr.tenant_id = $1::uuid AND fr.deleted_at IS NULL AND fr.anomaly_flag = true
              AND fr.supplied_at >= $2 AND fr.supplied_at <= $3
            ORDER BY fr.supplied_at DESC LIMIT 50`,
           tenantId, from, to,
@@ -574,13 +574,13 @@ export class AnalyticsService {
                   COUNT(*)::text AS record_count,
                   COUNT(*) FILTER (WHERE fr.anomaly_flag = true)::text AS anomaly_count
            FROM fuel_records fr LEFT JOIN users u ON u.id = fr.created_by
-           WHERE fr.tenant_id = $1 AND fr.deleted_at IS NULL AND fr.supplied_at >= $2 AND fr.supplied_at <= $3
+           WHERE fr.tenant_id = $1::uuid AND fr.deleted_at IS NULL AND fr.supplied_at >= $2 AND fr.supplied_at <= $3
            GROUP BY fr.created_by, u.name ORDER BY total_dispensed DESC`,
           tenantId, from, to,
         ),
         this.prisma.$queryRawUnsafe<RawTankRow[]>(
           `SELECT id AS tank_id, name AS tank_name, current_stock_liters::text AS current_volume_liters, capacity_liters::text
-           FROM fuel_tanks WHERE tenant_id = $1 AND deleted_at IS NULL`,
+           FROM fuel_tanks WHERE tenant_id = $1::uuid AND deleted_at IS NULL`,
           tenantId,
         ).catch(() => [] as RawTankRow[]),
       ]);
@@ -635,13 +635,13 @@ export class AnalyticsService {
 
     const [statusRows, kmRows, efficiencyRows, maintenanceRows, docRows] = await Promise.all([
       this.prisma.$queryRawUnsafe<Array<{ status: string; count: string }>>(
-        `SELECT status, COUNT(*)::text AS count FROM vehicles WHERE tenant_id = $1 AND deleted_at IS NULL GROUP BY status`,
+        `SELECT status, COUNT(*)::text AS count FROM vehicles WHERE tenant_id = $1::uuid AND deleted_at IS NULL GROUP BY status`,
         tenantId,
       ),
       this.prisma.$queryRawUnsafe<RawKmRow[]>(
         `SELECT fr.vehicle_id, v.plate AS vehicle_plate, (MAX(fr.odometer) - MIN(fr.odometer))::text AS estimated_km
          FROM fuel_records fr JOIN vehicles v ON v.id = fr.vehicle_id
-         WHERE fr.tenant_id = $1 AND fr.deleted_at IS NULL AND fr.supplied_at >= $2 AND fr.supplied_at <= $3 AND fr.odometer IS NOT NULL
+         WHERE fr.tenant_id = $1::uuid AND fr.deleted_at IS NULL AND fr.supplied_at >= $2 AND fr.supplied_at <= $3 AND fr.odometer IS NOT NULL
          GROUP BY fr.vehicle_id, v.plate HAVING MAX(fr.odometer) > MIN(fr.odometer)
          ORDER BY estimated_km DESC`,
         tenantId, from, to,
@@ -650,7 +650,7 @@ export class AnalyticsService {
         `SELECT fr.vehicle_id, v.plate AS vehicle_plate,
                 ROUND((MAX(fr.odometer) - MIN(fr.odometer)) / NULLIF(SUM(fr.liters),0),2)::text AS avg_km_per_liter
          FROM fuel_records fr JOIN vehicles v ON v.id = fr.vehicle_id
-         WHERE fr.tenant_id = $1 AND fr.deleted_at IS NULL AND fr.supplied_at >= $2 AND fr.supplied_at <= $3 AND fr.odometer IS NOT NULL
+         WHERE fr.tenant_id = $1::uuid AND fr.deleted_at IS NULL AND fr.supplied_at >= $2 AND fr.supplied_at <= $3 AND fr.odometer IS NOT NULL
          GROUP BY fr.vehicle_id, v.plate HAVING MAX(fr.odometer) > MIN(fr.odometer) AND SUM(fr.liters) > 0
          ORDER BY avg_km_per_liter DESC LIMIT 20`,
         tenantId, from, to,
@@ -659,13 +659,13 @@ export class AnalyticsService {
         `SELECT mo.vehicle_id, v.plate AS vehicle_plate,
                 COALESCE(SUM(mo.total_cost),0)::text AS total_cost, COUNT(*)::text AS order_count
          FROM maintenance_orders mo JOIN vehicles v ON v.id = mo.vehicle_id
-         WHERE mo.tenant_id = $1 AND mo.deleted_at IS NULL AND mo.created_at >= $2 AND mo.created_at <= $3
+         WHERE mo.tenant_id = $1::uuid AND mo.deleted_at IS NULL AND mo.created_at >= $2 AND mo.created_at <= $3
          GROUP BY mo.vehicle_id, v.plate ORDER BY total_cost DESC LIMIT 20`,
         tenantId, from, to,
       ),
       this.prisma.$queryRawUnsafe<RawDocExpRow[]>(
-        `SELECT id AS document_id, entity_type, entity_id, title, expires_at
-         FROM documents WHERE tenant_id = $1 AND deleted_at IS NULL AND status = 'ACTIVE'
+        `SELECT id AS document_id, entity_type, entity_id, document_type AS title, expires_at
+         FROM documents WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND status = 'ACTIVE'
            AND expires_at >= NOW() AND expires_at <= NOW() + INTERVAL '60 days'
          ORDER BY expires_at ASC LIMIT 50`,
         tenantId,
@@ -698,12 +698,12 @@ export class AnalyticsService {
     const [totalRows, statusRows, onTimeRows, avgDurationRows, occurrenceRows] = await Promise.all([
       this.prisma.$queryRawUnsafe<RawCountRow[]>(
         `SELECT COUNT(*)::text AS count FROM trips
-         WHERE tenant_id = $1 AND deleted_at IS NULL AND scheduled_start_at >= $2 AND scheduled_start_at <= $3`,
+         WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND scheduled_start_at >= $2 AND scheduled_start_at <= $3`,
         tenantId, from, to,
       ),
       this.prisma.$queryRawUnsafe<RawTripStatusRow[]>(
         `SELECT status, COUNT(*)::text AS count FROM trips
-         WHERE tenant_id = $1 AND deleted_at IS NULL AND scheduled_start_at >= $2 AND scheduled_start_at <= $3
+         WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND scheduled_start_at >= $2 AND scheduled_start_at <= $3
          GROUP BY status`,
         tenantId, from, to,
       ),
@@ -711,19 +711,19 @@ export class AnalyticsService {
         `SELECT
            COUNT(*) FILTER (WHERE actual_end_at IS NOT NULL AND scheduled_end_at IS NOT NULL AND actual_end_at <= scheduled_end_at)::text AS on_time,
            COUNT(*) FILTER (WHERE status = 'COMPLETED')::text AS total_completed
-         FROM trips WHERE tenant_id = $1 AND deleted_at IS NULL AND scheduled_start_at >= $2 AND scheduled_start_at <= $3`,
+         FROM trips WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND scheduled_start_at >= $2 AND scheduled_start_at <= $3`,
         tenantId, from, to,
       ),
       this.prisma.$queryRawUnsafe<RawAvgDurationRow[]>(
         `SELECT ROUND(AVG(EXTRACT(EPOCH FROM (actual_end_at - actual_start_at)) / 60))::text AS avg_duration_minutes
-         FROM trips WHERE tenant_id = $1 AND deleted_at IS NULL AND status = 'COMPLETED'
+         FROM trips WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND status = 'COMPLETED'
            AND actual_start_at IS NOT NULL AND actual_end_at IS NOT NULL
            AND scheduled_start_at >= $2 AND scheduled_start_at <= $3`,
         tenantId, from, to,
       ),
       this.prisma.$queryRawUnsafe<RawCountRow[]>(
         `SELECT COUNT(*)::text AS count FROM occurrences
-         WHERE tenant_id = $1 AND deleted_at IS NULL AND created_at >= $2 AND created_at <= $3`,
+         WHERE tenant_id = $1::uuid AND deleted_at IS NULL AND created_at >= $2 AND created_at <= $3`,
         tenantId, from, to,
       ),
     ]);

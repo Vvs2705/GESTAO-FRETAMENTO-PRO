@@ -73,7 +73,7 @@ export default function ExecutiveDashboard() {
 
   const fuel = useQuery<FuelAnalytics>({
     queryKey: ["analytics", "fuel", "executive"],
-    queryFn: () => request("/dashboards/fuel") as Promise<FuelAnalytics>,
+    queryFn: () => request("/analytics/fuel") as Promise<FuelAnalytics>,
   });
 
   const d = exec.data ?? ({} as Partial<ExecutiveDashboard>);

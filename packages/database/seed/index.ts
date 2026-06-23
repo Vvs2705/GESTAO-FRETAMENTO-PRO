@@ -253,6 +253,11 @@ async function main(): Promise<void> {
     { key: 'dashboard.operation', module: 'dashboard', action: 'operation', description: 'Dashboard operacional' },
     { key: 'dashboard.fleet', module: 'dashboard', action: 'fleet', description: 'Dashboard de frota' },
     { key: 'dashboard.fuel', module: 'dashboard', action: 'fuel', description: 'Dashboard de combustível' },
+    // Analytics (endpoints /v1/analytics/*)
+    { key: 'analytics.executive.read', module: 'analytics', action: 'executive.read', description: 'Analytics executivo' },
+    { key: 'analytics.operations.read', module: 'analytics', action: 'operations.read', description: 'Analytics operacional' },
+    { key: 'analytics.fleet.read', module: 'analytics', action: 'fleet.read', description: 'Analytics de frota' },
+    { key: 'analytics.fuel.read', module: 'analytics', action: 'fuel.read', description: 'Analytics de combustível' },
     // Relatórios
     { key: 'report.export', module: 'report', action: 'export', description: 'Exportar relatórios' },
   ];
@@ -298,6 +303,7 @@ async function main(): Promise<void> {
         'document.read', 'document.create',
         'notification.read',
         'dashboard.executive', 'dashboard.operation', 'dashboard.fleet', 'dashboard.fuel',
+        'analytics.executive.read', 'analytics.operations.read', 'analytics.fleet.read', 'analytics.fuel.read',
       ],
     },
     {
@@ -347,6 +353,7 @@ async function main(): Promise<void> {
         'audit.read',
         'document.read',
         'dashboard.executive', 'dashboard.fuel',
+        'analytics.executive.read', 'analytics.fuel.read',
         'report.export',
         'notification.read',
       ],

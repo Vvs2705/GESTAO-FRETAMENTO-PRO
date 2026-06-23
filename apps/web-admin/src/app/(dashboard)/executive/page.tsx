@@ -68,12 +68,12 @@ const brl = new Intl.NumberFormat("pt-BR", {
 export default function ExecutiveDashboard() {
   const exec = useQuery<ExecutiveDashboard>({
     queryKey: ["analytics", "dashboards", "executive"],
-    queryFn: () => request("/analytics/dashboards/executive") as Promise<ExecutiveDashboard>,
+    queryFn: () => request("/dashboards/executive") as Promise<ExecutiveDashboard>,
   });
 
   const fuel = useQuery<FuelAnalytics>({
     queryKey: ["analytics", "fuel", "executive"],
-    queryFn: () => request("/analytics/fuel") as Promise<FuelAnalytics>,
+    queryFn: () => request("/dashboards/fuel") as Promise<FuelAnalytics>,
   });
 
   const d = exec.data ?? ({} as Partial<ExecutiveDashboard>);

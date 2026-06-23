@@ -119,9 +119,17 @@ async function handleResponse(response: Response) {
     try {
       errorData = await response.json();
     } catch (_) {}
+    const friendly =
+      response.status >= 500
+        ? "Serviço temporariamente indisponível. Tente novamente em instantes."
+        : undefined;
     throw new ApiError(
       response.status,
-      errorData?.message || "Ocorreu um erro na requisição.",
+      // O backend serializa erros como { error: { code, message } }.
+      friendly ||
+        errorData?.error?.message ||
+        errorData?.message ||
+        "Ocorreu um erro na requisição.",
       errorData
     );
   }

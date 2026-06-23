@@ -50,7 +50,7 @@ function statusBadge(status: string): { type: StatusType; label: string } {
 export default function FleetPage() {
   const fleet = useQuery<FleetDashboard>({
     queryKey: ["analytics", "dashboards", "fleet"],
-    queryFn: () => request("/analytics/dashboards/fleet") as Promise<FleetDashboard>,
+    queryFn: () => request("/dashboards/fleet") as Promise<FleetDashboard>,
   });
   const list = useList<Vehicle>("vehicles", "/vehicles", { limit: 100 });
 

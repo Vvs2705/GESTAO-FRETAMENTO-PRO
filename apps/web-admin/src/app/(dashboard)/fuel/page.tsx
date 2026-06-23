@@ -113,7 +113,7 @@ export default function FuelDashboardPage() {
   });
   const analytics = useQuery<FuelAnalytics>({
     queryKey: ["analytics", "fuel"],
-    queryFn: () => request("/analytics/dashboards/fuel") as Promise<FuelAnalytics>,
+    queryFn: () => request("/dashboards/fuel") as Promise<FuelAnalytics>,
   });
   const anomalies = useList<FuelAnomalyRecord>("fuel-records", "/fuel-records/anomalies", { limit: 50 });
   const vehicles = useList<Vehicle>("vehicles", "/vehicles", { limit: 100 });

@@ -126,13 +126,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (!res.ok) {
-      let data: { message?: string } | null = null;
+      let data: { message?: string; error?: { message?: string } } | null = null;
       try {
         data = await res.json();
       } catch {
         /* ignore */
       }
-      throw new ApiError(res.status, data?.message ?? "Credenciais inválidas.");
+      // O backend serializa erros como { error: { code, message } }; aceita-se
+      // também { message } por retrocompatibilidade.
+      const backendMessage = data?.error?.message ?? data?.message;
+      // Distingue indisponibilidade de infraestrutura (banco/serviço fora) de
+      // credenciais inválidas — não mostrar "senha incorreta" quando a API caiu.
+      let message: string;
+      if (res.status >= 500) {
+        message = "Serviço temporariamente indisponível. Tente novamente em instantes.";
+      } else if (res.status === 401) {
+        message = backendMessage ?? "E-mail ou senha incorretos.";
+      } else {
+        message = backendMessage ?? "Não foi possível fazer login.";
+      }
+      throw new ApiError(res.status, message);
     }
 
     const payload = (await res.json()) as {

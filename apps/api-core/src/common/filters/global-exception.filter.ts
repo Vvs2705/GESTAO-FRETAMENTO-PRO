@@ -37,9 +37,32 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         code = exception.name;
       }
     } else if (exception instanceof Error) {
+      // Falha de infraestrutura (banco/conexão indisponível) → 503, não 500.
+      // Mantém o erro distinguível para o cliente: 503 = serviço fora do ar;
+      // 401 = credenciais. Sem isso, uma queda do Postgres no /auth/login
+      // aparece como "erro interno" e é confundida com senha incorreta.
+      const errName = exception.constructor?.name ?? exception.name;
+      const prismaCode = (exception as { code?: unknown }).code;
+      const isInfraDown =
+        errName === 'PrismaClientInitializationError' ||
+        errName === 'PrismaClientRustPanicError' ||
+        (typeof prismaCode === 'string' &&
+          ['P1000', 'P1001', 'P1002', 'P1008', 'P1011', 'P1017'].includes(
+            prismaCode,
+          )) ||
+        /ECONNREFUSED|ETIMEDOUT|ENOTFOUND|can't reach database|connection terminated|connection pool|server has closed the connection/i.test(
+          exception.message,
+        );
+
+      if (isInfraDown) {
+        status = HttpStatus.SERVICE_UNAVAILABLE;
+        code = 'SERVICE_UNAVAILABLE';
+        message = 'Serviço temporariamente indisponível. Tente novamente em instantes.';
+      }
+
       this.logger.error(
         { err: exception, path: request.url },
-        'Unhandled exception',
+        isInfraDown ? 'Infrastructure unavailable' : 'Unhandled exception',
       );
     }
 

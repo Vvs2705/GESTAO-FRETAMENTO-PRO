@@ -41,7 +41,7 @@ jobs:
         run: pnpm --filter @gestao-fretamento-pro/database db:generate
 
       - name: Cache node_modules
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             node_modules
@@ -70,7 +70,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Restore node_modules cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             node_modules
@@ -106,7 +106,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Restore node_modules cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             node_modules
@@ -142,7 +142,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Restore node_modules cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             node_modules
@@ -199,7 +199,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Restore node_modules cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             node_modules

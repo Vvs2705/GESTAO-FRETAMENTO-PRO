@@ -224,7 +224,7 @@ jobs:
           exit-code: '0'  # Don't fail CI — upload results for review
 
       - name: Upload Trivy SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         continue-on-error: true  # Requires GitHub Advanced Security — skip gracefully if not enabled
         with:
